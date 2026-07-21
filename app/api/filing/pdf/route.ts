@@ -40,6 +40,27 @@ export async function GET(request: NextRequest) {
     supabase.from("taxpayer_profiles").select("*").eq("user_id", user.id).maybeSingle(),
   ]);
 
+  const { error: generatedError } = await supabase
+    .from("filing_obligations")
+    .update({ generated_pdf_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("period", quarterMeta.period);
+
+  if (
+    generatedError &&
+    !generatedError.message.includes("generated_pdf_at") &&
+    !generatedError.message.includes("schema cache")
+  ) {
+    console.error("Could not mark filing PDF as generated.", generatedError);
+  }
+
+  await supabase
+    .from("filing_obligations")
+    .update({ status: "ready" })
+    .eq("user_id", user.id)
+    .eq("period", quarterMeta.period)
+    .eq("status", "draft");
+
   const pdfBytes = await readFile(path.join(formDirectory, quarterMeta.pdfFile));
   const pdf = await PDFDocument.load(pdfBytes);
   const helvetica = await pdf.embedFont(StandardFonts.Helvetica);

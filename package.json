@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "simulate:sms-reminders": "tsx scripts/simulate-sms-reminders.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "tailwindcss": "latest",
+    "tsx": "^4.23.1",
     "typescript": "latest"
   }
 }

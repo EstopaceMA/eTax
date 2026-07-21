@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/data";
+import { extractInvoiceTotalFromDocument } from "@/lib/egov/document-extractor";
 import { getPeriodSlug, getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
 import type { ChecklistStatus, FilingStatus, PaymentStatus } from "@/lib/types";
 
@@ -53,7 +54,10 @@ export async function uploadIncomeRecord(formData: FormData) {
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
+  const supportedDocument =
+    file.type.startsWith("image/") || file.type === "application/pdf";
+
+  if (!supportedDocument) {
     return;
   }
 
@@ -66,6 +70,14 @@ export async function uploadIncomeRecord(formData: FormData) {
     .slice(0, 48);
   const storagePath = `${user.id}/${getPeriodSlug(quarterMeta.period)}/${randomUUID()}-${safeFilename || "income-record"}.${extension}`;
   const uploadBody = Buffer.from(await file.arrayBuffer());
+  let extractedTotalIncome: number | null = null;
+
+  try {
+    const extraction = await extractInvoiceTotalFromDocument(file, uploadBody);
+    extractedTotalIncome = extraction.totalIncome;
+  } catch (error) {
+    console.error("Could not extract invoice total from income record.", error);
+  }
 
   const { data: bucket } = await adminSupabase.storage.getBucket("income-records");
 
@@ -101,6 +113,7 @@ export async function uploadIncomeRecord(formData: FormData) {
     storage_path: storagePath,
     content_type: file.type,
     size_bytes: file.size,
+    total_income: extractedTotalIncome,
   });
 
   if (insertError) {
@@ -110,6 +123,23 @@ export async function uploadIncomeRecord(formData: FormData) {
 
     if (!missingMetadataTable) {
       throw new Error(`Could not save income record metadata: ${insertError.message}`);
+    }
+  }
+
+  if (extractedTotalIncome !== null) {
+    const { error: metadataError } = await adminSupabase.storage
+      .from("income-records")
+      .upload(
+        `${storagePath}.metadata.json`,
+        Buffer.from(JSON.stringify({ total_income: extractedTotalIncome })),
+        {
+          contentType: "application/json",
+          upsert: true,
+        },
+      );
+
+    if (metadataError) {
+      console.error("Could not save extracted income record metadata.", metadataError);
     }
   }
 
@@ -174,4 +204,49 @@ export async function updateIncomeRecordTotal(formData: FormData) {
 
   revalidatePath(`/filing?quarter=${quarter}&view=documents`);
   revalidatePath("/filing");
+}
+
+export async function deleteIncomeRecord(formData: FormData) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const id = String(formData.get("id"));
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const storagePath = String(formData.get("storage_path") ?? "");
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isOwnStoragePath = storagePath.startsWith(`${user.id}/`);
+
+  if (isUuid) {
+    const { error } = await supabase
+      .from("income_record_uploads")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      const missingMetadataTable =
+        error.message.includes("income_record_uploads") &&
+        error.message.includes("schema cache");
+
+      if (!missingMetadataTable) {
+        throw new Error(`Could not delete income record metadata: ${error.message}`);
+      }
+    }
+  }
+
+  if (isOwnStoragePath) {
+    const { error } = await adminSupabase
+      .storage
+      .from("income-records")
+      .remove([storagePath, `${storagePath}.metadata.json`]);
+
+    if (error) {
+      throw new Error(`Could not delete income record file: ${error.message}`);
+    }
+  }
+
+  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  revalidatePath("/filing");
+  revalidatePath("/dashboard");
 }

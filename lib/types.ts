@@ -48,6 +48,7 @@ export type FilingObligation = {
   due_date: string;
   status: FilingStatus;
   payment_status: PaymentStatus;
+  generated_pdf_at?: string | null;
 };
 
 export type IncomeRecordUpload = {

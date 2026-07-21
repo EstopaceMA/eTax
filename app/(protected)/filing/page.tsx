@@ -1,4 +1,8 @@
-import { updateIncomeRecordTotal, uploadIncomeRecord } from "@/app/actions/workspace";
+import {
+  DeleteIncomeRecordForm,
+  IncomeRecordTotalForm,
+  IncomeRecordUploadForm,
+} from "@/components/income-record-forms";
 import { Card } from "@/components/ui/card";
 import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
@@ -10,7 +14,7 @@ import {
   parseFilingQuarter,
 } from "@/lib/filing-periods";
 import { formatDate } from "@/lib/utils";
-import { CalendarDays, ClipboardCheck, Download, FileText, ImageUp } from "lucide-react";
+import { CalendarDays, ClipboardCheck, Download, FileText } from "lucide-react";
 import Link from "next/link";
 
 type FilingView = "documents" | "bir-form";
@@ -182,7 +186,7 @@ export default async function FilingPage({
             </h2>
             <p className="mt-2 text-sm text-grey-600">
               {selectedView === "documents"
-                ? "Uploaded image records attached to this filing period."
+                ? "Uploaded invoice and income record files attached to this filing period."
                 : "Known profile details are drawn onto the PDF. Blank financial fields stay empty for manual review."}
             </p>
           </div>
@@ -196,29 +200,12 @@ export default async function FilingPage({
 
         {selectedView === "documents" ? (
           <div className="space-y-3">
-            <form
-              action={uploadIncomeRecord}
-              className="grid gap-3 rounded-xl border border-dashed border-primary-300 bg-primary-50 p-4 md:grid-cols-[1fr_auto]"
-              encType="multipart/form-data"
-            >
-              <input name="quarter" type="hidden" value={selectedQuarter} />
-              <label className="block">
-                <span className="mb-2 block text-sm font-bold text-primary-900">
-                  Upload income record image
-                </span>
-                <input
-                  accept="image/*"
-                  className="block w-full rounded-lg border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-grey-800 file:mr-3 file:rounded-md file:border-0 file:bg-primary-100 file:px-3 file:py-2 file:text-sm file:font-bold file:text-primary-900"
-                  name="file"
-                  required
-                  type="file"
-                />
-              </label>
-              <button className={`${buttonClass("primary")} self-end`} type="submit">
-                <ImageUp size={18} aria-hidden />
-                Upload
-              </button>
-            </form>
+            <IncomeRecordUploadForm
+              existingFilenames={selectedIncomeRecords.map(
+                (record) => record.original_filename,
+              )}
+              quarter={selectedQuarter}
+            />
 
             {selectedIncomeRecords.length > 0 ? (
               selectedIncomeRecords.map((record) => (
@@ -227,7 +214,7 @@ export default async function FilingPage({
                   key={record.id}
                 >
                   <div className="overflow-hidden rounded-lg bg-white">
-                    {record.signed_url ? (
+                    {record.signed_url && record.content_type?.startsWith("image/") ? (
                       <div
                         aria-label={record.original_filename}
                         className="aspect-[4/3] w-full bg-cover bg-center"
@@ -251,25 +238,14 @@ export default async function FilingPage({
                       Uploaded {formatUploadDate(record.created_at)} · {record.period}
                     </p>
                   </div>
-                  <form action={updateIncomeRecordTotal} className="grid gap-2">
-                    <input name="id" type="hidden" value={record.id} />
-                    <input name="quarter" type="hidden" value={selectedQuarter} />
-                    <input name="storage_path" type="hidden" value={record.storage_path} />
-                    <label>
-                      <span className="mb-1 block text-xs font-bold uppercase text-grey-500">
-                        Total income
-                      </span>
-                      <input
-                        className="min-h-10 w-full rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-                        defaultValue={record.total_income ?? ""}
-                        min="0"
-                        name="total_income"
-                        placeholder="0.00"
-                        step="0.01"
-                        type="number"
-                      />
-                    </label>
-                    <div className="flex items-center justify-between gap-3">
+                  <div className="grid gap-2">
+                    <IncomeRecordTotalForm
+                      id={record.id}
+                      quarter={selectedQuarter}
+                      storagePath={record.storage_path}
+                      totalIncome={record.total_income}
+                    />
+                    <div className="flex items-end justify-between gap-3">
                       <div>
                         <p className="text-xs font-bold text-grey-500">
                           {formatFileSize(record.size_bytes)}
@@ -278,11 +254,14 @@ export default async function FilingPage({
                           {record.content_type ?? "image"}
                         </p>
                       </div>
-                      <button className={buttonClass("secondary")} type="submit">
-                        Save
-                      </button>
+                      <DeleteIncomeRecordForm
+                        filename={record.original_filename}
+                        id={record.id}
+                        quarter={selectedQuarter}
+                        storagePath={record.storage_path}
+                      />
                     </div>
-                  </form>
+                  </div>
                 </div>
               ))
             ) : (
