@@ -14,13 +14,23 @@ import {
   parseFilingQuarter,
 } from "@/lib/filing-periods";
 import { formatDate } from "@/lib/utils";
-import { CalendarDays, ClipboardCheck, Download, FileText } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardCheck,
+  CreditCard,
+  Download,
+  FileText,
+} from "lucide-react";
 import Link from "next/link";
 
-type FilingView = "documents" | "bir-form";
+type FilingView = "documents" | "bir-form" | "payment";
 
 function parseFilingView(value: string | undefined): FilingView {
-  return value === "documents" ? "documents" : "bir-form";
+  if (value === "documents" || value === "payment") {
+    return value;
+  }
+
+  return "bir-form";
 }
 
 function formatFileSize(size: number | null) {
@@ -76,6 +86,20 @@ export default async function FilingPage({
       upload.period,
     ),
   );
+  const totalIncomeRecorded = selectedIncomeRecords.reduce(
+    (sum, record) => sum + Number(record.total_income ?? 0),
+    0,
+  );
+  const formattedTotalIncome = new Intl.NumberFormat("en-PH", {
+    currency: "PHP",
+    style: "currency",
+  }).format(totalIncomeRecorded);
+  const selectedViewLabel =
+    selectedView === "documents"
+      ? "Documents"
+      : selectedView === "payment"
+        ? "Payment review"
+        : "BIR Form";
 
   return (
     <div className="space-y-6">
@@ -176,18 +200,21 @@ export default async function FilingPage({
         <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-sm font-bold text-primary-700">
-              {selectedQuarterMeta.label} ·{" "}
-              {selectedView === "documents" ? "Documents" : "BIR Form"}
+              {selectedQuarterMeta.label} · {selectedViewLabel}
             </p>
             <h2 className="mt-2 text-2xl font-extrabold text-grey-900">
               {selectedView === "documents"
                 ? "Income records"
-                : `BIR Form ${selectedQuarterMeta.formCode}`}
+                : selectedView === "payment"
+                  ? "Payment receipt preview"
+                  : `BIR Form ${selectedQuarterMeta.formCode}`}
             </h2>
             <p className="mt-2 text-sm text-grey-600">
               {selectedView === "documents"
                 ? "Uploaded invoice and income record files attached to this filing period."
-                : "Known profile details are drawn onto the PDF. Blank financial fields stay empty for manual review."}
+                : selectedView === "payment"
+                  ? "Review the filing summary before moving to a future payment step."
+                  : "Known profile details are drawn onto the PDF. Blank financial fields stay empty for manual review."}
             </p>
           </div>
           {selectedView === "bir-form" ? (
@@ -270,6 +297,68 @@ export default async function FilingPage({
               </div>
             )}
           </div>
+        ) : selectedView === "payment" ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+            <div className="rounded-xl border border-grey-300 bg-white p-5">
+              <div className="flex items-start justify-between gap-4 border-b border-grey-300 pb-5">
+                <div>
+                  <p className="text-xs font-bold uppercase text-grey-500">
+                    Pre-payment receipt
+                  </p>
+                  <h3 className="mt-2 text-2xl font-extrabold text-grey-900">
+                    {selectedQuarterMeta.label} filing review
+                  </h3>
+                  <p className="mt-1 text-sm text-grey-600">
+                    Review your filing details before continuing to payment.
+                  </p>
+                </div>
+              </div>
+
+              <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+                {[
+                  ["Filing period", selectedQuarterMeta.period],
+                  ["Form", `BIR Form ${selectedQuarterMeta.formCode}`],
+                  [
+                    "Due date",
+                    formatDate(selectedObligation?.due_date ?? selectedQuarterMeta.dueDate),
+                  ],
+                  ["Income records", `${selectedIncomeRecords.length} uploaded`],
+                  ["Recorded income", formattedTotalIncome],
+                  ["Tax amount payable", "For manual review"],
+                ].map(([label, value]) => (
+                  <div className="rounded-lg bg-grey-100 p-4" key={label}>
+                    <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
+                    <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+            </div>
+
+            <aside className="rounded-xl bg-grey-100 p-5">
+              <p className="text-sm font-bold text-grey-500">Next step</p>
+              <h3 className="mt-2 text-lg font-extrabold text-grey-900">
+                Payment handoff placeholder
+              </h3>
+              <p className="mt-2 text-sm text-grey-600">
+                A future release can connect this review to a payment provider or an
+                official external payment channel.
+              </p>
+              <div className="mt-5 grid gap-2">
+                <Link
+                  className={buttonClass("secondary")}
+                  href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
+                >
+                  <FileText size={18} aria-hidden />
+                  Back to BIR Form
+                </Link>
+                <button className={buttonClass("primary")} type="button">
+                  <CreditCard size={18} aria-hidden />
+                  Proceed
+                </button>
+              </div>
+            </aside>
+          </div>
         ) : (
           <>
             {selectedObligation ? (
@@ -285,6 +374,29 @@ export default async function FilingPage({
                 src={pdfPreviewFitUrl}
                 title={`${selectedQuarterMeta.label} Form ${selectedQuarterMeta.formCode} PDF preview`}
               />
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Link
+                className={buttonClass("soft")}
+                href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
+              >
+                <FileText size={18} aria-hidden />
+                File
+              </Link>
+              <Link
+                className={buttonClass("soft")}
+                href={`/filing?quarter=${selectedQuarter}&view=payment`}
+              >
+                <CreditCard size={18} aria-hidden />
+                Pay
+              </Link>
+              <Link
+                className={buttonClass("primary")}
+                href={`/filing?quarter=${selectedQuarter}&view=payment`}
+              >
+                <CreditCard size={18} aria-hidden />
+                File &amp; Pay
+              </Link>
             </div>
           </>
         )}
