@@ -113,7 +113,6 @@ export default async function FilingPage({
   }).format(getTaxAmountPayable());
   const paymentSucceeded =
     params?.payment === "success" || params?.payment === "returned";
-  const paymentSmsStatus = params?.sms;
   const fileBeforePay = params?.flow === "file-and-pay";
   const filingNotice =
     params?.filing === "filed"
@@ -157,7 +156,7 @@ export default async function FilingPage({
                   className={[
                     "flex min-h-16 items-center justify-between gap-3 rounded-lg px-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
                     isSelected
-                      ? "bg-primary-500 text-white shadow-[0_8px_16px_rgba(0,167,111,0.2)]"
+                      ? "bg-primary-500 text-white shadow-[0_8px_16px_rgba(7,92,247,0.2)]"
                       : "text-grey-700 hover:bg-primary-50 hover:text-primary-900",
                   ].join(" ")}
                   href={`/filing?quarter=${quarter}&view=${selectedView}`}
@@ -402,16 +401,6 @@ export default async function FilingPage({
                     />
                     <p>This test transaction was processed by eGovPay.</p>
                   </div>
-                  {paymentSmsStatus ? (
-                    <p className="mt-3 rounded-lg bg-grey-100 p-3 text-sm font-semibold text-grey-700">
-                      {paymentSmsStatus === "sent" ||
-                      paymentSmsStatus === "already-sent"
-                        ? "SMS receipt queued for your registered mobile number."
-                        : paymentSmsStatus === "missing_mobile_number"
-                          ? "SMS receipt skipped because no registered mobile number is available."
-                          : "SMS receipt could not be queued. Your payment return still completed."}
-                    </p>
-                  ) : null}
                   <Link
                     className={`${buttonClass("primary")} mt-5 w-full`}
                     href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
@@ -422,7 +411,7 @@ export default async function FilingPage({
                 </div>
               </aside>
             ) : (
-              <aside className="overflow-hidden rounded-xl border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(0,167,111,0.08)]">
+              <aside className="overflow-hidden rounded-xl border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(7,92,247,0.08)]">
                 <div className="border-b border-primary-500/15 bg-primary-50 p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-bold uppercase text-primary-700">

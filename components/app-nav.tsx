@@ -37,7 +37,7 @@ export function DesktopNav() {
             className={cn(
               "flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
               active
-                ? "bg-primary-50 text-primary-900 shadow-[inset_3px_0_0_#00A76F]"
+                ? "bg-primary-50 text-primary-900 shadow-[inset_3px_0_0_#075CF7]"
                 : "text-grey-600 hover:bg-primary-50 hover:text-primary-900",
             )}
             href={item.href}

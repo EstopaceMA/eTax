@@ -3,12 +3,12 @@
 @theme {
   --font-sans: "Public Sans", "Helvetica", "Arial", sans-serif;
   --font-display: "Barlow", "Helvetica", "Arial", sans-serif;
-  --color-primary-50: #c8fad6;
-  --color-primary-300: #5be49b;
-  --color-primary-500: #00a76f;
-  --color-primary-700: #007867;
-  --color-primary-900: #004b50;
-  --color-info-500: #00b8d9;
+  --color-primary-50: #eaf2ff;
+  --color-primary-300: #7fb0ff;
+  --color-primary-500: #075cf7;
+  --color-primary-700: #0344bf;
+  --color-primary-900: #062b73;
+  --color-info-500: #0ea5e9;
   --color-success-500: #22c55e;
   --color-warning-500: #ffab00;
   --color-error-500: #ff5630;
@@ -43,10 +43,10 @@ a,
 button,
 input,
 select {
-  outline-color: #00a76f;
+  outline-color: #075cf7;
 }
 
 ::selection {
-  background: #c8fad6;
-  color: #004b50;
+  background: #eaf2ff;
+  color: #062b73;
 }
