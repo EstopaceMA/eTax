@@ -29,7 +29,7 @@ const welcomeMessage: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi! Ask me about Philippine taxes. For help using this workspace, include “eTax” in your question.",
+    "Hi! I can help with Philippine tax questions and guide you through using eTax.",
 };
 
 const suggestions = [
