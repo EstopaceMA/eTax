@@ -57,28 +57,28 @@ export const starterDeadlines: Array<{
   channel: string;
 }> = [
   {
-    title: "Quarterly income tax preparation",
+    title: "2nd Quarter Form 1701Q",
     description:
-      "Review income records and missing checklist items before filing.",
+      "Upload income record images, confirm total income, and review the generated Form 1701Q preview.",
     due_date: "2026-08-15",
     status: "due_soon",
-    channel: "Filing tracker",
+    channel: "Filing tracker · BIR Form",
   },
   {
-    title: "Monthly percentage tax review",
+    title: "3rd Quarter Form 1701Q",
     description:
-      "Confirm whether this obligation applies to your registered tax type before proceeding.",
-    due_date: "2026-08-20",
+      "Prepare the next quarter's income records before opening the Form 1701Q preview.",
+    due_date: "2026-11-15",
     status: "upcoming",
-    channel: "Filing tracker",
+    channel: "Filing tracker · Documents",
   },
   {
-    title: "Registration record check",
+    title: "Annual Form 1701A",
     description:
-      "Review whether any profile details should be updated before filing.",
-    due_date: "2026-09-05",
+      "Review annual income records and confirm profile details before generating Form 1701A.",
+    due_date: "2027-04-15",
     status: "upcoming",
-    channel: "Profile review",
+    channel: "Filing tracker · Annual filing",
   },
 ];
 

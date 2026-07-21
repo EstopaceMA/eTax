@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   CalendarClock,
-  FileWarning,
+  ImageUp,
   ShieldCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,20 @@ import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
 import { getWorkspaceData } from "@/lib/data";
 import { daysUntil, formatDate, readinessPercentage } from "@/lib/utils";
+
+function deadlineDistance(date: string) {
+  const days = daysUntil(date);
+
+  if (days === 0) {
+    return "Due today";
+  }
+
+  if (days < 0) {
+    return `${Math.abs(days)} days overdue`;
+  }
+
+  return `${days} days away`;
+}
 
 export default async function DashboardPage() {
   const data = await getWorkspaceData();
@@ -18,10 +32,16 @@ export default async function DashboardPage() {
   );
   const readiness = readinessPercentage(requiredItems.length, completedRequired.length);
   const nextDeadline = data.deadlines[0];
-  const missingItems = data.checklistItems.filter(
-    (item) => item.status === "missing",
+  const currentFiling =
+    data.filingObligations.find((filing) => filing.due_date === nextDeadline?.due_date) ??
+    data.filingObligations[0];
+  const currentUploads = data.incomeRecordUploads.filter(
+    (upload) => upload.period === currentFiling?.period,
   );
-  const currentFiling = data.filingObligations[0];
+  const totalIncome = currentUploads.reduce(
+    (sum, upload) => sum + (upload.total_income ?? 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
@@ -38,8 +58,8 @@ export default async function DashboardPage() {
             before filing.
           </p>
         </div>
-        <Link className={buttonClass("primary")} href="/documents">
-          Review checklist
+        <Link className={buttonClass("primary")} href="/filing?view=documents">
+          Upload income records
         </Link>
       </div>
 
@@ -55,16 +75,18 @@ export default async function DashboardPage() {
           <CalendarClock className="text-warning-500" size={28} aria-hidden />
           <p className="mt-4 text-sm font-bold text-grey-500">Next deadline</p>
           <p className="mt-1 text-xl font-extrabold text-grey-900">
-            {nextDeadline ? `${daysUntil(nextDeadline.due_date)} days` : "No date"}
+            {nextDeadline ? deadlineDistance(nextDeadline.due_date) : "No date"}
           </p>
         </Card>
         <Card>
-          <FileWarning className="text-error-500" size={28} aria-hidden />
-          <p className="mt-4 text-sm font-bold text-grey-500">Missing items</p>
-          <p className="mt-1 text-xl font-extrabold text-grey-900">{missingItems.length}</p>
+          <ImageUp className="text-info-500" size={28} aria-hidden />
+          <p className="mt-4 text-sm font-bold text-grey-500">Income records</p>
+          <p className="mt-1 text-xl font-extrabold text-grey-900">
+            {currentUploads.length}
+          </p>
         </Card>
         <Card>
-          <p className="text-sm font-bold text-grey-500">Current filing</p>
+          <p className="text-sm font-bold text-grey-500">Active filing</p>
           <p className="mt-4 text-xl font-extrabold text-grey-900">
             {currentFiling?.period ?? "No filing"}
           </p>
@@ -81,36 +103,48 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-extrabold text-grey-900">
-                Preparation checklist
+                Income records
               </h2>
               <p className="mt-1 text-sm text-grey-600">
-                The most important items to complete before filing.
+                Uploaded images and saved totals for the active filing period.
               </p>
             </div>
-            <Link className="text-sm font-bold text-primary-700" href="/documents">
-              View all
+            <Link className="text-sm font-bold text-primary-700" href="/filing?view=documents">
+              Manage
             </Link>
           </div>
-          <div className="mt-6 space-y-4">
-            {data.checklistItems.slice(0, 4).map((item) => (
-              <div className="flex gap-4 rounded-xl bg-grey-100 p-4" key={item.id}>
-                <div className="mt-1 h-3 w-3 rounded-full bg-primary-500" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-bold text-grey-900">{item.title}</h3>
-                    <StatusBadge status={item.status} />
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-grey-600">
-                    {item.description}
+          <div className="mt-6 rounded-xl bg-primary-50 p-4">
+            <p className="text-sm font-bold text-primary-900">Total income recorded</p>
+            <p className="mt-2 text-3xl font-extrabold text-grey-900">
+              PHP {totalIncome.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+          <div className="mt-4 space-y-3">
+            {currentUploads.slice(0, 3).map((upload) => (
+              <div className="rounded-xl bg-grey-100 p-4" key={upload.id}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="break-all font-bold text-grey-900">
+                    {upload.original_filename}
+                  </h3>
+                  <p className="text-sm font-extrabold text-grey-900">
+                    PHP {(upload.total_income ?? 0).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
+                <p className="mt-1 text-sm leading-6 text-grey-600">{upload.period}</p>
               </div>
             ))}
+            {currentUploads.length === 0 ? (
+              <div className="rounded-xl bg-grey-100 p-4 text-sm font-semibold text-grey-600">
+                No income record images uploaded for the active filing period yet.
+              </div>
+            ) : null}
           </div>
         </Card>
 
         <Card>
-          <h2 className="text-xl font-extrabold text-grey-900">Next deadline</h2>
+          <h2 className="text-xl font-extrabold text-grey-900">Next filing deadline</h2>
           {nextDeadline ? (
             <div className="mt-5">
               <StatusBadge status={nextDeadline.status} />
@@ -123,6 +157,18 @@ export default async function DashboardPage() {
               <p className="mt-4 text-sm leading-6 text-grey-600">
                 {nextDeadline.description}
               </p>
+              {currentFiling ? (
+                <div className="mt-5 rounded-xl bg-grey-100 p-4">
+                  <p className="text-sm font-bold text-grey-500">Matched filing</p>
+                  <p className="mt-1 font-extrabold text-grey-900">
+                    {currentFiling.form_name}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <StatusBadge status={currentFiling.status} />
+                    <StatusBadge status={currentFiling.payment_status} />
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : (
             <p className="mt-4 text-sm text-grey-600">No upcoming deadlines.</p>

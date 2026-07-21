@@ -164,29 +164,29 @@ values
   (
     '51111111-1111-4111-8111-111111111111',
     '11111111-1111-4111-8111-111111111111',
-    'Quarterly income tax preparation',
-    'Review income records and missing checklist items before filing.',
+    '2nd Quarter Form 1701Q',
+    'Upload income record images, confirm total income, and review the generated Form 1701Q preview.',
     '2026-08-15',
     'due_soon',
-    'Filing tracker'
+    'Filing tracker · BIR Form'
   ),
   (
     '51111111-1111-4111-8111-111111111112',
     '11111111-1111-4111-8111-111111111111',
-    'Monthly percentage tax review',
-    'Confirm whether this obligation applies to your registered tax type before proceeding.',
-    '2026-08-20',
+    '3rd Quarter Form 1701Q',
+    'Prepare the next quarter''s income records before opening the Form 1701Q preview.',
+    '2026-11-15',
     'upcoming',
-    'Filing tracker'
+    'Filing tracker · Documents'
   ),
   (
     '51111111-1111-4111-8111-111111111113',
     '11111111-1111-4111-8111-111111111111',
-    'Registration record check',
-    'Review whether any profile details should be updated before filing.',
-    '2026-09-05',
+    'Annual Form 1701A',
+    'Review annual income records and confirm profile details before generating Form 1701A.',
+    '2027-04-15',
     'upcoming',
-    'Profile review'
+    'Filing tracker · Annual filing'
   )
 on conflict (id) do update set
   title = excluded.title,

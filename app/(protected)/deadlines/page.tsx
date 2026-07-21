@@ -4,6 +4,20 @@ import { StatusBadge } from "@/components/status";
 import { getWorkspaceData } from "@/lib/data";
 import { daysUntil, formatDate } from "@/lib/utils";
 
+function deadlineDistance(date: string) {
+  const days = daysUntil(date);
+
+  if (days === 0) {
+    return "Due today";
+  }
+
+  if (days < 0) {
+    return `${Math.abs(days)} days overdue`;
+  }
+
+  return `${days} days away`;
+}
+
 export default async function DeadlinesPage() {
   const { deadlines } = await getWorkspaceData();
 
@@ -31,7 +45,7 @@ export default async function DeadlinesPage() {
                   <StatusBadge status={deadline.status} />
                 </div>
                 <p className="mt-2 text-sm font-bold text-grey-700">
-                  {formatDate(deadline.due_date)} · {daysUntil(deadline.due_date)} days away
+                  {formatDate(deadline.due_date)} · {deadlineDistance(deadline.due_date)}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-grey-600">{deadline.description}</p>
                 <p className="mt-4 text-sm font-bold text-primary-700">{deadline.channel}</p>
