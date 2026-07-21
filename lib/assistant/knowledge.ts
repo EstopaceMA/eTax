@@ -16,6 +16,7 @@ const helpDocumentFiles = [
   "filing-tracker.md",
   "upload-income-records.md",
   "bir-form-preview.md",
+  "payment-with-egovpay.md",
   "sms-reminders.md",
   "common-questions.md",
 ] as const;

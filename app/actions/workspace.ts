@@ -1,11 +1,13 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/data";
 import { extractInvoiceTotalFromDocument } from "@/lib/egov/document-extractor";
+import { sendFilingConfirmationSms } from "@/lib/filing-confirmation-sms";
 import { getPeriodSlug, getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
 import type { ChecklistStatus, FilingStatus, PaymentStatus } from "@/lib/types";
 
@@ -40,6 +42,57 @@ export async function updateFilingStatus(formData: FormData) {
 
   revalidatePath("/filing");
   revalidatePath("/dashboard");
+}
+
+export async function fileTaxReturn(formData: FormData) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
+  let smsStatus = "skipped";
+
+  const { data: obligation } = await supabase
+    .from("filing_obligations")
+    .select("id, payment_status, status")
+    .eq("user_id", user.id)
+    .in("period", [quarterMeta.period, ...(quarterMeta.periodAliases ?? [])])
+    .maybeSingle();
+
+  if (!obligation) {
+    redirect(`/filing?quarter=${quarter}&view=bir-form&filing=missing`);
+  }
+
+  if (obligation.status === "filed" || obligation.status === "paid") {
+    redirect(`/filing?quarter=${quarter}&view=bir-form&filing=already-filed`);
+  }
+
+  await supabase
+    .from("filing_obligations")
+    .update({ status: "filed" })
+    .eq("id", obligation.id)
+    .eq("user_id", user.id);
+
+  try {
+    const { data: taxpayerProfile } = await supabase
+      .from("taxpayer_profiles")
+      .select("mobile_number")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const result = await sendFilingConfirmationSms({
+      isPaid: obligation.payment_status === "paid",
+      quarter,
+      taxpayerProfile,
+    });
+
+    smsStatus = result.status === "sent" ? "sent" : result.reason;
+  } catch (error) {
+    console.error("Could not send filing confirmation SMS.", error);
+    smsStatus = "failed";
+  }
+
+  revalidatePath("/filing");
+  revalidatePath("/dashboard");
+  redirect(`/filing?quarter=${quarter}&view=bir-form&filing=filed&sms=${smsStatus}`);
 }
 
 export async function uploadIncomeRecord(formData: FormData) {

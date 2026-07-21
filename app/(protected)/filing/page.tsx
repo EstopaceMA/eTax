@@ -6,6 +6,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
+import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
+import { FileTaxReturnForm } from "@/components/file-tax-return-form";
 import { getWorkspaceData } from "@/lib/data";
 import {
   filingQuarters,
@@ -13,14 +15,17 @@ import {
   isFilingPeriodOpen,
   parseFilingQuarter,
 } from "@/lib/filing-periods";
+import { getTaxAmountPayable } from "@/lib/tax-amount-payable";
 import { formatDate } from "@/lib/utils";
 import {
   CalendarDays,
+  CheckCircle2,
   ClipboardCheck,
-  CreditCard,
   Download,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 type FilingView = "documents" | "bir-form" | "payment";
@@ -56,7 +61,13 @@ function formatUploadDate(date: string) {
 export default async function FilingPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ quarter?: string; view?: string }>;
+  searchParams?: Promise<{
+    filing?: string;
+    payment?: string;
+    quarter?: string;
+    sms?: string;
+    view?: string;
+  }>;
 }) {
   const params = await searchParams;
   const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
@@ -94,6 +105,23 @@ export default async function FilingPage({
     currency: "PHP",
     style: "currency",
   }).format(totalIncomeRecorded);
+  const formattedTaxAmountPayable = new Intl.NumberFormat("en-PH", {
+    currency: "PHP",
+    style: "currency",
+  }).format(getTaxAmountPayable());
+  const paymentSucceeded =
+    params?.payment === "success" || params?.payment === "returned";
+  const paymentSmsStatus = params?.sms;
+  const filingNotice =
+    params?.filing === "filed"
+      ? params?.sms === "sent"
+        ? "eTax filed this return and sent an SMS confirmation."
+        : "eTax filed this return. SMS confirmation was not sent."
+      : params?.filing === "already-filed"
+        ? "This return is already marked filed."
+        : params?.filing === "missing"
+          ? "This filing record could not be found."
+          : null;
   const selectedViewLabel =
     selectedView === "documents"
       ? "Documents"
@@ -206,14 +234,18 @@ export default async function FilingPage({
               {selectedView === "documents"
                 ? "Income records"
                 : selectedView === "payment"
-                  ? "Payment receipt preview"
+                  ? paymentSucceeded
+                    ? "Payment complete"
+                    : "Payment receipt preview"
                   : `BIR Form ${selectedQuarterMeta.formCode}`}
             </h2>
             <p className="mt-2 text-sm text-grey-600">
               {selectedView === "documents"
                 ? "Uploaded invoice and income record files attached to this filing period."
                 : selectedView === "payment"
-                  ? "Review the filing summary before moving to a future payment step."
+                  ? paymentSucceeded
+                    ? "Your eGovPay test payment details are shown below."
+                    : "Review the filing summary before continuing to payment."
                   : "Known profile details are drawn onto the PDF. Blank financial fields stay empty for manual review."}
             </p>
           </div>
@@ -303,15 +335,24 @@ export default async function FilingPage({
               <div className="flex items-start justify-between gap-4 border-b border-grey-300 pb-5">
                 <div>
                   <p className="text-xs font-bold uppercase text-grey-500">
-                    Pre-payment receipt
+                    {paymentSucceeded ? "Payment confirmation" : "Pre-payment receipt"}
                   </p>
                   <h3 className="mt-2 text-2xl font-extrabold text-grey-900">
-                    {selectedQuarterMeta.label} filing review
+                    {paymentSucceeded
+                      ? "Payment successful"
+                      : `${selectedQuarterMeta.label} filing review`}
                   </h3>
                   <p className="mt-1 text-sm text-grey-600">
-                    Review your filing details before continuing to payment.
+                    {paymentSucceeded
+                      ? "Your test payment was completed through eGovPay."
+                      : "Review your filing details before continuing to payment."}
                   </p>
                 </div>
+                {paymentSucceeded ? (
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-success-500/10 text-success-500">
+                    <CheckCircle2 aria-hidden size={28} strokeWidth={2.5} />
+                  </div>
+                ) : null}
               </div>
 
               <dl className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -324,7 +365,7 @@ export default async function FilingPage({
                   ],
                   ["Income records", `${selectedIncomeRecords.length} uploaded`],
                   ["Recorded income", formattedTotalIncome],
-                  ["Tax amount payable", "For manual review"],
+                  ["Tax amount payable", formattedTaxAmountPayable],
                 ].map(([label, value]) => (
                   <div className="rounded-lg bg-grey-100 p-4" key={label}>
                     <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
@@ -335,29 +376,123 @@ export default async function FilingPage({
 
             </div>
 
-            <aside className="rounded-xl bg-grey-100 p-5">
-              <p className="text-sm font-bold text-grey-500">Next step</p>
-              <h3 className="mt-2 text-lg font-extrabold text-grey-900">
-                Payment handoff placeholder
-              </h3>
-              <p className="mt-2 text-sm text-grey-600">
-                A future release can connect this review to a payment provider or an
-                official external payment channel.
-              </p>
-              <div className="mt-5 grid gap-2">
-                <Link
-                  className={buttonClass("secondary")}
-                  href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
-                >
-                  <FileText size={18} aria-hidden />
-                  Back to BIR Form
-                </Link>
-                <button className={buttonClass("primary")} type="button">
-                  <CreditCard size={18} aria-hidden />
-                  Proceed
-                </button>
-              </div>
-            </aside>
+            {paymentSucceeded ? (
+              <aside className="overflow-hidden rounded-xl border border-success-500/20 bg-white">
+                <div className="bg-success-500 px-5 py-4 text-white">
+                  <div className="flex items-center gap-3">
+                    <div className="flex shrink-0 items-center justify-center rounded-lg bg-white p-2 shadow-sm">
+                      <Image
+                        alt="eGovPay"
+                        className="h-7 w-28 object-contain"
+                        height={28}
+                        src="/egovpay-logo.webp"
+                        width={112}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase text-white/80">
+                        eGovPay test mode
+                      </p>
+                      <p className="font-extrabold">Payment complete</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm font-semibold text-grey-600">Amount paid</p>
+                  <p className="mt-1 text-3xl font-extrabold text-grey-900">
+                    {formattedTaxAmountPayable}
+                  </p>
+                  <div className="mt-5 flex items-start gap-2 border-t border-grey-300 pt-4 text-sm text-grey-600">
+                    <ShieldCheck
+                      aria-hidden
+                      className="mt-0.5 shrink-0 text-success-500"
+                      size={18}
+                    />
+                    <p>This test transaction was processed by eGovPay.</p>
+                  </div>
+                  {paymentSmsStatus ? (
+                    <p className="mt-3 rounded-lg bg-grey-100 p-3 text-sm font-semibold text-grey-700">
+                      {paymentSmsStatus === "sent" ||
+                      paymentSmsStatus === "already-sent"
+                        ? "SMS receipt sent to your registered mobile number."
+                        : paymentSmsStatus === "missing_mobile_number"
+                          ? "SMS receipt skipped because no registered mobile number is available."
+                          : "SMS receipt could not be sent. Your payment return still completed."}
+                    </p>
+                  ) : null}
+                  <Link
+                    className={`${buttonClass("primary")} mt-5 w-full`}
+                    href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
+                  >
+                    <FileText size={18} aria-hidden />
+                    Return to filing
+                  </Link>
+                </div>
+              </aside>
+            ) : (
+              <aside className="overflow-hidden rounded-xl border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(0,167,111,0.08)]">
+                <div className="border-b border-primary-500/15 bg-primary-50 p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-bold uppercase text-primary-700">
+                      Secure payment handoff
+                    </p>
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary-500/20 bg-white px-2.5 py-1 text-xs font-bold text-primary-700">
+                      <ShieldCheck aria-hidden size={13} />
+                      Test mode
+                    </div>
+                  </div>
+                  <h3 className="mt-4 flex flex-wrap items-center gap-2 text-lg font-extrabold text-grey-900">
+                    <span>Pay with</span>
+                    <Image
+                      alt="eGovPay"
+                      className="h-auto w-[124px]"
+                      height={31}
+                      priority
+                      src="/egovpay-logo.webp"
+                      width={124}
+                    />
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-grey-600">
+                    Continue to the hosted eGovPay test gateway to pay your tax
+                    amount.
+                  </p>
+                  <div className="mt-4 rounded-lg bg-grey-100 p-4">
+                    <p className="text-xs font-bold uppercase text-grey-500">
+                      Amount to pay
+                    </p>
+                    <p className="mt-1 text-2xl font-extrabold text-grey-900">
+                      {formattedTaxAmountPayable}
+                    </p>
+                  </div>
+                  {params?.payment === "unavailable" ? (
+                    <p className="mt-4 rounded-lg bg-error-500/10 p-3 text-sm font-semibold text-error-500">
+                      eGovPay could not create the payment link. Try again in a moment.
+                    </p>
+                  ) : null}
+                  {params?.payment === "already-paid" ? (
+                    <p className="mt-4 rounded-lg bg-primary-50 p-3 text-sm font-semibold text-primary-900">
+                      This filing is already marked as paid.
+                    </p>
+                  ) : null}
+                  <div className="mt-5 grid gap-2">
+                    <EgovPayCheckoutForm quarter={selectedQuarter} />
+                    <Link
+                      className={buttonClass("secondary")}
+                      href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
+                    >
+                      <FileText size={18} aria-hidden />
+                      Back to BIR Form
+                    </Link>
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-grey-500">
+                    <ShieldCheck aria-hidden size={14} />
+                    Test mode · No live funds are moved
+                  </div>
+                </div>
+              </aside>
+            )}
           </div>
         ) : (
           <>
@@ -368,6 +503,11 @@ export default async function FilingPage({
                 <StatusBadge status={selectedObligation.payment_status} />
               </div>
             ) : null}
+            {filingNotice ? (
+              <p className="rounded-xl bg-primary-50 p-4 text-sm font-semibold text-primary-900">
+                {filingNotice}
+              </p>
+            ) : null}
             <div className="overflow-hidden rounded-xl border border-grey-300 bg-grey-100">
               <iframe
                 className="h-[720px] w-full bg-white"
@@ -376,27 +516,18 @@ export default async function FilingPage({
               />
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <Link
-                className={buttonClass("soft")}
-                href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
-              >
-                <FileText size={18} aria-hidden />
-                File
-              </Link>
-              <Link
-                className={buttonClass("soft")}
-                href={`/filing?quarter=${selectedQuarter}&view=payment`}
-              >
-                <CreditCard size={18} aria-hidden />
-                Pay
-              </Link>
-              <Link
-                className={buttonClass("primary")}
-                href={`/filing?quarter=${selectedQuarter}&view=payment`}
-              >
-                <CreditCard size={18} aria-hidden />
-                File &amp; Pay
-              </Link>
+              <FileTaxReturnForm quarter={selectedQuarter} />
+              <EgovPayCheckoutForm
+                label="Pay"
+                quarter={selectedQuarter}
+                variant="soft"
+              />
+              <EgovPayCheckoutForm
+                fileBeforePay
+                label="File & Pay"
+                pendingLabel="Filing then opening eGovPay..."
+                quarter={selectedQuarter}
+              />
             </div>
           </>
         )}

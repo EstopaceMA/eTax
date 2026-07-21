@@ -31,6 +31,7 @@ eTax helps a taxpayer prepare for Philippine tax filing by keeping profile detai
 - Documents: track checklist items needed before filing.
 - Deadlines: review upcoming compliance dates and filing channels.
 - Filing tracker: upload income records, extract totals, and preview or download a BIR form PDF.
+- eGovPay: pay the Tax amount payable shown in Payment review through the hosted checkout.
 - SMS reminders: receive deadline reminders when filing or payment actions are still incomplete.
 
 ## Important assistant behavior
