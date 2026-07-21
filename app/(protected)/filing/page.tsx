@@ -135,7 +135,7 @@ export default async function FilingPage({
       <div className="space-y-3">
         <div className="-mx-3 overflow-x-auto px-3 md:mx-0 md:px-0">
           <div className="grid min-w-[720px] grid-cols-4 gap-2 rounded-lg border border-grey-300 bg-grey-50 p-1 shadow-[0_8px_22px_rgba(20,26,33,0.05)] md:min-w-0">
-            {quarterlyObligations.map(({ label, period, opensOn, dueDate, quarter, obligation }) => {
+            {quarterlyObligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
               const isSelected = quarter === selectedQuarter;
               const isOpen = isFilingPeriodOpen(opensOn);
 
@@ -158,7 +158,7 @@ export default async function FilingPage({
                         isSelected ? "text-primary-50" : "text-grey-500",
                       ].join(" ")}
                     >
-                      {period} · due {formatDate(obligation?.due_date ?? dueDate)}
+                      Due {formatDate(obligation?.due_date ?? dueDate)}
                     </span>
                   </span>
                   <CalendarDays aria-hidden size={18} />
@@ -218,7 +218,7 @@ export default async function FilingPage({
         <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <p className="text-sm font-bold text-primary-700">
-              {selectedQuarterMeta.label} · {selectedViewLabel}
+              {selectedViewLabel}
             </p>
             <h2 className="mt-2 text-2xl font-extrabold text-grey-900">
               {selectedView === "documents"
