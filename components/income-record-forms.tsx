@@ -9,16 +9,21 @@ import {
   uploadIncomeRecord,
 } from "@/app/actions/workspace";
 import { buttonClass } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 function normalizeFilename(value: string) {
   return value.trim().toLowerCase();
 }
 
 function SubmitButton({
+  ariaLabel,
+  className,
   children,
   pendingLabel,
   variant = "primary",
 }: {
+  ariaLabel?: string;
+  className?: string;
   children: React.ReactNode;
   pendingLabel: string;
   variant?: Parameters<typeof buttonClass>[0];
@@ -26,7 +31,12 @@ function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <button className={buttonClass(variant)} disabled={pending} type="submit">
+    <button
+      aria-label={pending ? pendingLabel : ariaLabel}
+      className={cn(buttonClass(variant), className)}
+      disabled={pending}
+      type="submit"
+    >
       {pending ? <Loader2 className="animate-spin" size={18} aria-hidden /> : children}
       <span>{pending ? pendingLabel : null}</span>
     </button>
@@ -135,31 +145,38 @@ export function IncomeRecordTotalForm({
   storagePath: string;
   totalIncome: number | null;
 }) {
+  const inputId = `income-total-${id}`;
+
   return (
-    <form action={updateIncomeRecordTotal} className="grid gap-2">
+    <form action={updateIncomeRecordTotal} className="contents">
       <input name="id" type="hidden" value={id} />
       <input name="quarter" type="hidden" value={quarter} />
       <input name="storage_path" type="hidden" value={storagePath} />
-      <label>
-        <span className="mb-1 block text-xs font-bold uppercase text-grey-500">
-          Total income
-        </span>
-        <input
-          className="min-h-10 w-full rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-          defaultValue={totalIncome ?? ""}
-          min="0"
-          name="total_income"
-          placeholder="0.00"
-          step="0.01"
-          type="number"
-        />
+      <label
+        className="self-center text-xs font-bold uppercase text-grey-500"
+        htmlFor={inputId}
+      >
+        Total income
       </label>
-      <div className="flex justify-end">
-        <SubmitButton pendingLabel="Saving..." variant="secondary">
-          <Save size={16} aria-hidden />
-          <span>Save</span>
-        </SubmitButton>
-      </div>
+      <input
+        className="col-span-2 min-h-10 w-full rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+        defaultValue={totalIncome ?? ""}
+        id={inputId}
+        min="0"
+        name="total_income"
+        placeholder="0.00"
+        step="0.01"
+        type="number"
+      />
+      <SubmitButton
+        ariaLabel="Save total income"
+        className="col-start-2 min-h-10 w-full px-3"
+        pendingLabel="Saving..."
+        variant="secondary"
+      >
+        <Save size={16} aria-hidden />
+        <span>Save</span>
+      </SubmitButton>
     </form>
   );
 }
@@ -178,6 +195,7 @@ export function DeleteIncomeRecordForm({
   return (
     <form
       action={deleteIncomeRecord}
+      className="w-full"
       onSubmit={(event) => {
         const shouldDelete = window.confirm(`Delete "${filename}" from this filing period?`);
 
@@ -189,7 +207,12 @@ export function DeleteIncomeRecordForm({
       <input name="id" type="hidden" value={id} />
       <input name="quarter" type="hidden" value={quarter} />
       <input name="storage_path" type="hidden" value={storagePath} />
-      <SubmitButton pendingLabel="Deleting..." variant="secondary">
+      <SubmitButton
+        ariaLabel={`Delete ${filename}`}
+        className="min-h-10 w-full px-3"
+        pendingLabel="Deleting..."
+        variant="secondary"
+      >
         <Trash2 size={16} aria-hidden />
         <span>Delete</span>
       </SubmitButton>

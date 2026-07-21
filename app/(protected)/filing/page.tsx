@@ -39,18 +39,6 @@ function parseFilingView(value: string | undefined): FilingView {
   return "bir-form";
 }
 
-function formatFileSize(size: number | null) {
-  if (!size) {
-    return "Unknown size";
-  }
-
-  if (size < 1024 * 1024) {
-    return `${Math.round(size / 1024)} KB`;
-  }
-
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function formatUploadDate(date: string) {
   return new Intl.DateTimeFormat("en-PH", {
     month: "short",
@@ -248,7 +236,7 @@ export default async function FilingPage({
                   ? paymentSucceeded
                     ? "Your eGovPay test payment details are shown below."
                     : "Review the filing summary before continuing to payment."
-                  : "Known profile details are drawn onto the PDF. Blank financial fields stay empty for manual review."}
+                  : "Review the official form preview before choosing a filing action."}
             </p>
           </div>
           {selectedView === "bir-form" ? (
@@ -271,7 +259,7 @@ export default async function FilingPage({
             {selectedIncomeRecords.length > 0 ? (
               selectedIncomeRecords.map((record) => (
                 <div
-                  className="grid gap-4 rounded-xl border border-grey-300 bg-grey-100 p-3 lg:grid-cols-[112px_1fr_240px] lg:items-center"
+                  className="grid gap-4 rounded-xl border border-grey-300 bg-grey-100 p-3 lg:grid-cols-[112px_minmax(0,1fr)_minmax(300px,340px)] lg:items-center"
                   key={record.id}
                 >
                   <div className="overflow-hidden rounded-lg bg-white">
@@ -299,22 +287,14 @@ export default async function FilingPage({
                       Uploaded {formatUploadDate(record.created_at)} · {record.period}
                     </p>
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] gap-2">
                     <IncomeRecordTotalForm
                       id={record.id}
                       quarter={selectedQuarter}
                       storagePath={record.storage_path}
                       totalIncome={record.total_income}
                     />
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold text-grey-500">
-                          {formatFileSize(record.size_bytes)}
-                        </p>
-                        <p className="mt-0.5 text-xs font-bold text-grey-500">
-                          {record.content_type ?? "image"}
-                        </p>
-                      </div>
+                    <div className="w-full">
                       <DeleteIncomeRecordForm
                         filename={record.original_filename}
                         id={record.id}
