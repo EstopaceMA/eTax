@@ -67,20 +67,20 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[76px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+6px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
       {mobileNavItems.map((item) => {
         if (!("href" in item)) {
           return (
-            <div className="relative flex min-h-12 items-end justify-center" key={item.label}>
-              <div className="absolute -top-8 grid size-20 place-items-center rounded-full bg-grey-50" />
+            <div className="relative flex min-h-10 items-end justify-center" key={item.label}>
+              <div className="absolute -top-7 grid size-16 place-items-center rounded-full bg-grey-50" />
               <button
                 aria-label="Open eTax AI Assistant"
-                className="group relative -top-6 flex flex-col items-center rounded-lg text-[11px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="group relative -top-5 flex flex-col items-center rounded-lg text-[11px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
                 onClick={openAssistant}
                 type="button"
               >
-                <span className="grid size-16 place-items-center rounded-full bg-primary-500 text-white shadow-[0_10px_24px_rgba(7,92,247,0.26)] ring-4 ring-grey-50 transition group-hover:bg-primary-700">
-                  <item.icon size={30} aria-hidden strokeWidth={2.2} />
+                <span className="grid size-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_8px_20px_rgba(7,92,247,0.24)] ring-4 ring-grey-50 transition group-hover:bg-primary-700">
+                  <item.icon size={26} aria-hidden strokeWidth={2.2} />
                 </span>
               </button>
             </div>
@@ -93,7 +93,7 @@ export function MobileNav() {
           <Link
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
+              "flex min-h-10 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
               active
                 ? "bg-primary-500 text-white shadow-[0_8px_18px_rgba(7,92,247,0.18)]"
                 : "text-grey-600 hover:bg-primary-50 hover:text-primary-900",
@@ -101,7 +101,7 @@ export function MobileNav() {
             href={item.href}
             key={item.href}
           >
-            <item.icon size={18} aria-hidden />
+            <item.icon size={17} aria-hidden />
             {item.label}
           </Link>
         );

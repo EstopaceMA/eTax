@@ -80,7 +80,7 @@ export default async function ProtectedLayout({
             </Link>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-3 pb-28 pt-4 md:px-5 md:pb-8 md:pt-5">
+        <main className="mx-auto max-w-6xl px-3 pb-24 pt-4 md:px-5 md:pb-8 md:pt-5">
           {children}
         </main>
       </div>
