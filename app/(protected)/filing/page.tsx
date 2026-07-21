@@ -118,8 +118,8 @@ export default async function FilingPage({
   const filingNotice =
     params?.filing === "filed"
       ? params?.sms === "sent"
-        ? "eTax filed this return and sent an SMS confirmation."
-        : "eTax filed this return. SMS confirmation was not sent."
+        ? "eTax filed this return and queued an SMS confirmation."
+        : "eTax filed this return. SMS confirmation was not queued."
       : params?.filing === "already-filed"
         ? "This return is already marked filed."
         : params?.filing === "missing"
@@ -380,27 +380,16 @@ export default async function FilingPage({
             </div>
 
             {paymentSucceeded ? (
-              <aside className="overflow-hidden rounded-xl border border-success-500/20 bg-white">
-                <div className="bg-success-500 px-5 py-4 text-white">
-                  <div className="flex items-center gap-3">
-                    <div className="flex shrink-0 items-center justify-center rounded-lg bg-white p-2 shadow-sm">
-                      <Image
-                        alt="eGovPay"
-                        className="h-7 w-28 object-contain"
-                        height={28}
-                        src="/egovpay-logo.webp"
-                        width={112}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold uppercase text-white/80">
-                        eGovPay test mode
-                      </p>
-                      <p className="font-extrabold">Payment complete</p>
-                    </div>
+              <aside className="rounded-xl border border-success-500/20 bg-white p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-500/10 text-success-500">
+                    <CheckCircle2 aria-hidden size={22} strokeWidth={2.5} />
                   </div>
+                  <h3 className="text-lg font-extrabold text-grey-900">
+                    Payment complete
+                  </h3>
                 </div>
-                <div className="p-5">
+                <div className="mt-5">
                   <p className="text-sm font-semibold text-grey-600">Amount paid</p>
                   <p className="mt-1 text-3xl font-extrabold text-grey-900">
                     {formattedTaxAmountPayable}
@@ -417,10 +406,10 @@ export default async function FilingPage({
                     <p className="mt-3 rounded-lg bg-grey-100 p-3 text-sm font-semibold text-grey-700">
                       {paymentSmsStatus === "sent" ||
                       paymentSmsStatus === "already-sent"
-                        ? "SMS receipt sent to your registered mobile number."
+                        ? "SMS receipt queued for your registered mobile number."
                         : paymentSmsStatus === "missing_mobile_number"
                           ? "SMS receipt skipped because no registered mobile number is available."
-                          : "SMS receipt could not be sent. Your payment return still completed."}
+                          : "SMS receipt could not be queued. Your payment return still completed."}
                     </p>
                   ) : null}
                   <Link
