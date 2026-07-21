@@ -18,6 +18,7 @@ export const filingQuarters: Array<{
   shortLabel: string;
   period: string;
   periodAliases?: string[];
+  opensOn: string;
   dueDate: string;
   formCode: "1701Q" | "1701A";
   formTitle: string;
@@ -28,6 +29,7 @@ export const filingQuarters: Array<{
     label: "1st Quarter",
     shortLabel: "Q1",
     period: `Q1 ${filingYear}`,
+    opensOn: `${filingYear}-04-01`,
     dueDate: `${filingYear}-05-15`,
     formCode: "1701Q",
     formTitle: "Quarterly income tax return",
@@ -38,6 +40,7 @@ export const filingQuarters: Array<{
     label: "2nd Quarter",
     shortLabel: "Q2",
     period: `Q2 ${filingYear}`,
+    opensOn: `${filingYear}-07-01`,
     dueDate: `${filingYear}-08-15`,
     formCode: "1701Q",
     formTitle: "Quarterly income tax return",
@@ -48,6 +51,7 @@ export const filingQuarters: Array<{
     label: "3rd Quarter",
     shortLabel: "Q3",
     period: `Q3 ${filingYear}`,
+    opensOn: `${filingYear}-10-01`,
     dueDate: `${filingYear}-11-15`,
     formCode: "1701Q",
     formTitle: "Quarterly income tax return",
@@ -59,6 +63,7 @@ export const filingQuarters: Array<{
     shortLabel: "Annual",
     period: `Annual ${filingYear}`,
     periodAliases: [`Q4 ${filingYear}`],
+    opensOn: `${filingYear + 1}-01-01`,
     dueDate: `${filingYear + 1}-04-15`,
     formCode: "1701A",
     formTitle: "Annual income tax return",
@@ -88,6 +93,20 @@ export function parseFilingQuarter(value: string | null): FilingQuarter {
 
 export function getQuarterMeta(quarter: FilingQuarter) {
   return filingQuarters.find((item) => item.quarter === quarter) ?? filingQuarters[0];
+}
+
+export function isFilingPeriodOpen(opensOn: string, now = new Date()) {
+  const openDate = new Date(`${opensOn}T00:00:00`);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  return today >= openDate;
+}
+
+export function getLatestOpenQuarter(now = new Date()): FilingQuarter {
+  return filingQuarters
+    .filter((quarter) => isFilingPeriodOpen(quarter.opensOn, now))
+    .at(-1)?.quarter ?? 1;
 }
 
 export function getPeriodSlug(period: string) {

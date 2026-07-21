@@ -71,6 +71,7 @@ export async function ensureWorkspace() {
       work_type: defaults.workType,
       registration_status: "Already registered",
       tin_status: "123-456-789-000",
+      mobile_number: "09064902734",
       rdo: "RDO 043A - East Pasig",
       filing_frequency: defaults.filingFrequency,
     });

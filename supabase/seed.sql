@@ -75,6 +75,7 @@ insert into public.taxpayer_profiles (
   work_type,
   registration_status,
   tin_status,
+  mobile_number,
   rdo,
   filing_frequency
 )
@@ -85,6 +86,7 @@ values (
   'Self-employed professional',
   'Already registered',
   '123-456-789-000',
+  '09064902734',
   'RDO 043A - East Pasig',
   'Quarterly and monthly checks'
 )
@@ -93,6 +95,7 @@ on conflict (id) do update set
   work_type = excluded.work_type,
   registration_status = excluded.registration_status,
   tin_status = excluded.tin_status,
+  mobile_number = excluded.mobile_number,
   rdo = excluded.rdo,
   filing_frequency = excluded.filing_frequency;
 

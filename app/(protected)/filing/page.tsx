@@ -3,7 +3,12 @@ import { Card } from "@/components/ui/card";
 import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
 import { getWorkspaceData } from "@/lib/data";
-import { filingQuarters, parseFilingQuarter } from "@/lib/filing-periods";
+import {
+  filingQuarters,
+  getLatestOpenQuarter,
+  isFilingPeriodOpen,
+  parseFilingQuarter,
+} from "@/lib/filing-periods";
 import { formatDate } from "@/lib/utils";
 import { CalendarDays, ClipboardCheck, Download, FileText, ImageUp } from "lucide-react";
 import Link from "next/link";
@@ -40,7 +45,12 @@ export default async function FilingPage({
   searchParams?: Promise<{ quarter?: string; view?: string }>;
 }) {
   const params = await searchParams;
-  const selectedQuarter = parseFilingQuarter(params?.quarter ?? null);
+  const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
+  const requestedQuarterMeta =
+    filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ?? filingQuarters[0];
+  const selectedQuarter = isFilingPeriodOpen(requestedQuarterMeta.opensOn)
+    ? requestedQuarter
+    : getLatestOpenQuarter();
   const selectedView = parseFilingView(params?.view);
   const selectedQuarterMeta =
     filingQuarters.find(({ quarter }) => quarter === selectedQuarter) ?? filingQuarters[0];
@@ -55,6 +65,7 @@ export default async function FilingPage({
     ({ quarter }) => quarter === selectedQuarter,
   )?.obligation;
   const pdfPreviewUrl = `/api/filing/pdf?quarter=${selectedQuarter}`;
+  const pdfPreviewFitUrl = `${pdfPreviewUrl}#zoom=page-width&pagemode=none`;
   const pdfDownloadUrl = `${pdfPreviewUrl}&download=1`;
   const selectedIncomeRecords = incomeRecordUploads.filter((upload) =>
     [selectedQuarterMeta.period, ...(selectedQuarterMeta.periodAliases ?? [])].includes(
@@ -78,10 +89,11 @@ export default async function FilingPage({
       <div className="space-y-3">
         <div className="overflow-x-auto rounded-xl border border-[rgba(145,158,171,0.16)] bg-white p-1 shadow-[0_8px_24px_rgba(20,26,33,0.04)]">
           <div className="grid min-w-[640px] grid-cols-4 gap-1">
-            {quarterlyObligations.map(({ label, period, dueDate, quarter, obligation }) => {
+            {quarterlyObligations.map(({ label, period, opensOn, dueDate, quarter, obligation }) => {
               const isSelected = quarter === selectedQuarter;
+              const isOpen = isFilingPeriodOpen(opensOn);
 
-              return (
+              return isOpen ? (
                 <Link
                   className={[
                     "flex min-h-16 items-center justify-between gap-3 rounded-lg px-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
@@ -105,6 +117,20 @@ export default async function FilingPage({
                   </span>
                   <CalendarDays aria-hidden size={18} />
                 </Link>
+              ) : (
+                <div
+                  aria-disabled="true"
+                  className="flex min-h-16 cursor-not-allowed items-center justify-between gap-3 rounded-lg px-4 text-left text-grey-400"
+                  key={quarter}
+                >
+                  <span>
+                    <span className="block text-sm font-extrabold">{label}</span>
+                    <span className="mt-1 block text-xs font-bold">
+                      Opens {formatDate(opensOn)}
+                    </span>
+                  </span>
+                  <CalendarDays aria-hidden size={18} />
+                </div>
               );
             })}
           </div>
@@ -277,7 +303,7 @@ export default async function FilingPage({
             <div className="overflow-hidden rounded-xl border border-grey-300 bg-grey-100">
               <iframe
                 className="h-[720px] w-full bg-white"
-                src={pdfPreviewUrl}
+                src={pdfPreviewFitUrl}
                 title={`${selectedQuarterMeta.label} Form ${selectedQuarterMeta.formCode} PDF preview`}
               />
             </div>

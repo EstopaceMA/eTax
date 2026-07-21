@@ -16,6 +16,7 @@ export type TaxpayerProfile = {
   work_type: string;
   registration_status: string;
   tin_status: string;
+  mobile_number: string | null;
   rdo: string | null;
   filing_frequency: string;
 };

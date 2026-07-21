@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 import { taxpayerCategories } from "@/lib/taxpayer-categories";
 
 export default async function SignUpPage({
@@ -14,7 +15,7 @@ export default async function SignUpPage({
   return (
     <main className="grid min-h-screen place-items-center bg-grey-100 px-4 py-8">
       <Card className="w-full max-w-3xl">
-        <p className="text-sm font-bold text-primary-700">eTax</p>
+        <BrandLogo size="sm" priority />
         <h1 className="mt-3 text-3xl font-extrabold text-grey-900">
           Create workspace
         </h1>

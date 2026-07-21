@@ -15,6 +15,7 @@ create table if not exists public.taxpayer_profiles (
   work_type text not null,
   registration_status text not null,
   tin_status text not null,
+  mobile_number text,
   rdo text,
   filing_frequency text not null,
   created_at timestamptz not null default now(),

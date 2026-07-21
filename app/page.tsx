@@ -7,12 +7,14 @@ import {
 } from "lucide-react";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-grey-100">
       <section className="mx-auto grid min-h-screen max-w-6xl gap-8 px-4 py-8 md:grid-cols-[1.05fr_0.95fr] md:items-center md:px-8">
         <div>
+          <BrandLogo className="mb-6" size="lg" priority />
           <div className="mb-6 inline-flex rounded-full bg-primary-50 px-4 py-2 text-sm font-bold text-primary-900">
             Category-first tax guidance
           </div>

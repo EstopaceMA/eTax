@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signIn } from "@/app/actions/auth";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default async function SignInPage({
   searchParams,
@@ -13,7 +14,7 @@ export default async function SignInPage({
   return (
     <main className="grid min-h-screen place-items-center bg-grey-100 px-4 py-8">
       <Card className="w-full max-w-md">
-        <p className="text-sm font-bold text-primary-700">eTax</p>
+        <BrandLogo size="sm" priority />
         <h1 className="mt-3 text-3xl font-extrabold text-grey-900">Sign in</h1>
         <p className="mt-2 text-sm leading-6 text-grey-600">
           Open your taxpayer compliance workspace.

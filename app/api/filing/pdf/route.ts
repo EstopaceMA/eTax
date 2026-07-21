@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
   drawText(page, tin, 72, 748, 8);
   drawText(page, taxpayer?.rdo, 432, 748, 8);
   drawText(page, user.email, 108, 704, 7);
+  drawText(page, taxpayer?.mobile_number, 432, 704, 7);
   drawText(page, taxpayer?.taxpayer_type, 108, 681, 7);
   drawText(page, taxpayer?.work_type, 108, 666, 7);
 

@@ -197,6 +197,7 @@ def seed(base_url: str, service_key: str) -> None:
                 "work_type": "Self-employed professional",
                 "registration_status": "Already registered",
                 "tin_status": "123-456-789-000",
+                "mobile_number": "09064902734",
                 "rdo": "RDO 043A - East Pasig",
                 "filing_frequency": "Quarterly and monthly checks",
             }

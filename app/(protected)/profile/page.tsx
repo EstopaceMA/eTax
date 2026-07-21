@@ -10,6 +10,7 @@ export default async function ProfilePage() {
     ["Work type", taxpayerProfile?.work_type ?? "Not provided"],
     ["Registration status", taxpayerProfile?.registration_status ?? "Not provided"],
     ["TIN status", taxpayerProfile?.tin_status ?? "Not provided"],
+    ["Mobile number", taxpayerProfile?.mobile_number ?? "Not provided"],
     ["RDO", taxpayerProfile?.rdo ?? "Not provided"],
     ["Filing frequency", taxpayerProfile?.filing_frequency ?? "Not provided"],
   ];

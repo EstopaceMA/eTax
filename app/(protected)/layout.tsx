@@ -3,6 +3,7 @@ import { signOut } from "@/app/actions/auth";
 import { requireUser } from "@/lib/data";
 import { buttonClass } from "@/components/ui/button";
 import { DesktopNav, MobileNav } from "@/components/app-nav";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default async function ProtectedLayout({
   children,
@@ -15,10 +16,10 @@ export default async function ProtectedLayout({
     <div className="min-h-screen bg-grey-200">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-[280px] border-r border-[rgba(145,158,171,0.16)] bg-white px-4 py-6 lg:block">
         <Link
-          className="block px-3 text-xl font-extrabold text-grey-900"
+          className="block px-3 focus-visible:outline-2 focus-visible:outline-offset-2"
           href="/dashboard"
         >
-          eTax
+          <BrandLogo size="sm" priority />
         </Link>
         <DesktopNav />
       </aside>
