@@ -18,6 +18,7 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "okapibm25": "^1.4.1",
     "pdf-lib": "^1.17.1",
     "react": "latest",
     "react-dom": "latest"

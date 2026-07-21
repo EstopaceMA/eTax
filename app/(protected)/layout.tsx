@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/data";
 import { buttonClass } from "@/components/ui/button";
 import { DesktopNav, MobileNav } from "@/components/app-nav";
 import { BrandLogo } from "@/components/brand-logo";
+import { AssistantChat } from "@/components/assistant-chat";
 
 export default async function ProtectedLayout({
   children,
@@ -40,6 +41,7 @@ export default async function ProtectedLayout({
           {children}
         </main>
       </div>
+      <AssistantChat />
     </div>
   );
 }
