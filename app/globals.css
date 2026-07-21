@@ -4,10 +4,14 @@
   --font-sans: "Public Sans", "Helvetica", "Arial", sans-serif;
   --font-display: "Barlow", "Helvetica", "Arial", sans-serif;
   --color-primary-50: #eaf2ff;
+  --color-primary-100: #d8e8ff;
+  --color-primary-200: #b8d3ff;
   --color-primary-300: #7fb0ff;
   --color-primary-500: #075cf7;
   --color-primary-700: #0344bf;
+  --color-primary-800: #063a95;
   --color-primary-900: #062b73;
+  --color-primary-950: #031b49;
   --color-info-500: #0ea5e9;
   --color-success-500: #22c55e;
   --color-warning-500: #ffab00;

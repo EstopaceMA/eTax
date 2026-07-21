@@ -120,10 +120,10 @@ export default async function FilingPage({
         : "BIR Form";
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold text-primary-700">Filing tracker</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-grey-900 md:text-4xl">
+    <div className="space-y-5">
+      <div className="rounded-lg border border-grey-300 bg-grey-50 p-4 shadow-[0_10px_28px_rgba(20,26,33,0.05)] md:p-5">
+        <p className="text-xs font-bold uppercase text-primary-700">Filing tracker</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight text-grey-900 md:text-4xl">
           Quarterly filing workspace
         </h1>
         <p className="mt-2 max-w-2xl text-grey-600">
@@ -133,8 +133,8 @@ export default async function FilingPage({
       </div>
 
       <div className="space-y-3">
-        <div className="overflow-x-auto rounded-xl border border-[rgba(145,158,171,0.16)] bg-white p-1 shadow-[0_8px_24px_rgba(20,26,33,0.04)]">
-          <div className="grid min-w-[640px] grid-cols-4 gap-1">
+        <div className="-mx-3 overflow-x-auto px-3 md:mx-0 md:px-0">
+          <div className="grid min-w-[720px] grid-cols-4 gap-2 rounded-lg border border-grey-300 bg-grey-50 p-1 shadow-[0_8px_22px_rgba(20,26,33,0.05)] md:min-w-0">
             {quarterlyObligations.map(({ label, period, opensOn, dueDate, quarter, obligation }) => {
               const isSelected = quarter === selectedQuarter;
               const isOpen = isFilingPeriodOpen(opensOn);
@@ -142,7 +142,7 @@ export default async function FilingPage({
               return isOpen ? (
                 <Link
                   className={[
-                    "flex min-h-16 items-center justify-between gap-3 rounded-lg px-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
+                    "flex min-h-16 items-center justify-between gap-3 rounded-md px-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
                     isSelected
                       ? "bg-primary-500 text-white shadow-[0_8px_16px_rgba(7,92,247,0.2)]"
                       : "text-grey-700 hover:bg-primary-50 hover:text-primary-900",
@@ -166,7 +166,7 @@ export default async function FilingPage({
               ) : (
                 <div
                   aria-disabled="true"
-                  className="flex min-h-16 cursor-not-allowed items-center justify-between gap-3 rounded-lg px-4 text-left text-grey-400"
+                  className="flex min-h-16 cursor-not-allowed items-center justify-between gap-3 rounded-md px-4 text-left text-grey-400"
                   key={quarter}
                 >
                   <span>
@@ -182,7 +182,7 @@ export default async function FilingPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {[
             {
               href: `/filing?quarter=${selectedQuarter}&view=documents`,
@@ -240,7 +240,7 @@ export default async function FilingPage({
             </p>
           </div>
           {selectedView === "bir-form" ? (
-            <a className={buttonClass("secondary")} href={pdfDownloadUrl}>
+            <a className={`${buttonClass("secondary")} w-full lg:w-auto`} href={pdfDownloadUrl}>
               <Download size={18} aria-hidden />
               Download PDF
             </a>
@@ -259,7 +259,7 @@ export default async function FilingPage({
             {selectedIncomeRecords.length > 0 ? (
               selectedIncomeRecords.map((record) => (
                 <div
-                  className="grid gap-4 rounded-xl border border-grey-300 bg-grey-100 p-3 lg:grid-cols-[112px_minmax(0,1fr)_minmax(300px,340px)] lg:items-center"
+                  className="grid gap-4 rounded-lg border border-grey-300 bg-grey-100 p-3 lg:grid-cols-[112px_minmax(0,1fr)_minmax(300px,340px)] lg:items-center"
                   key={record.id}
                 >
                   <div className="overflow-hidden rounded-lg bg-white">
@@ -287,7 +287,7 @@ export default async function FilingPage({
                       Uploaded {formatUploadDate(record.created_at)} · {record.period}
                     </p>
                   </div>
-                  <div className="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] gap-2">
+                  <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
                     <IncomeRecordTotalForm
                       id={record.id}
                       quarter={selectedQuarter}
@@ -306,14 +306,14 @@ export default async function FilingPage({
                 </div>
               ))
             ) : (
-              <div className="rounded-xl bg-grey-100 p-5 text-sm font-semibold text-grey-600">
+              <div className="rounded-lg border border-dashed border-grey-300 bg-grey-100 p-5 text-sm font-semibold text-grey-600">
                 No income record images uploaded for this period yet.
               </div>
             )}
           </div>
         ) : selectedView === "payment" ? (
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-            <div className="rounded-xl border border-grey-300 bg-white p-5">
+            <div className="rounded-lg border border-grey-300 bg-white p-4 md:p-5">
               <div className="flex items-start justify-between gap-4 border-b border-grey-300 pb-5">
                 <div>
                   <p className="text-xs font-bold uppercase text-grey-500">
@@ -349,7 +349,7 @@ export default async function FilingPage({
                   ["Recorded income", formattedTotalIncome],
                   ["Tax amount payable", formattedTaxAmountPayable],
                 ].map(([label, value]) => (
-                  <div className="rounded-lg bg-grey-100 p-4" key={label}>
+                  <div className="rounded-lg border border-grey-300 bg-grey-100 p-4" key={label}>
                     <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
                     <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
                   </div>
@@ -359,7 +359,7 @@ export default async function FilingPage({
             </div>
 
             {paymentSucceeded ? (
-              <aside className="rounded-xl border border-success-500/20 bg-white p-5">
+              <aside className="rounded-lg border border-success-500/20 bg-white p-5">
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-500/10 text-success-500">
                     <CheckCircle2 aria-hidden size={22} strokeWidth={2.5} />
@@ -391,7 +391,7 @@ export default async function FilingPage({
                 </div>
               </aside>
             ) : (
-              <aside className="overflow-hidden rounded-xl border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(7,92,247,0.08)]">
+              <aside className="overflow-hidden rounded-lg border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(7,92,247,0.08)]">
                 <div className="border-b border-primary-500/15 bg-primary-50 p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-bold uppercase text-primary-700">
@@ -420,7 +420,7 @@ export default async function FilingPage({
                       ? "eTax will file this return for you before opening the hosted eGovPay test gateway."
                       : "Continue to the hosted eGovPay test gateway to pay your tax amount."}
                   </p>
-                  <div className="mt-4 rounded-lg bg-grey-100 p-4">
+                  <div className="mt-4 rounded-lg border border-grey-300 bg-grey-100 p-4">
                     <p className="text-xs font-bold uppercase text-grey-500">
                       Amount to pay
                     </p>
@@ -467,35 +467,35 @@ export default async function FilingPage({
         ) : (
           <>
             {selectedObligation ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl bg-grey-100 p-4">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-grey-300 bg-grey-100 p-4">
                 <span className="text-sm font-bold text-grey-500">Current record</span>
                 <StatusBadge status={selectedObligation.status} />
                 <StatusBadge status={selectedObligation.payment_status} />
               </div>
             ) : null}
             {filingNotice ? (
-              <p className="rounded-xl bg-primary-50 p-4 text-sm font-semibold text-primary-900">
+              <p className="rounded-lg border border-primary-200 bg-primary-50 p-4 text-sm font-semibold text-primary-900">
                 {filingNotice}
               </p>
             ) : null}
-            <div className="overflow-hidden rounded-xl border border-grey-300 bg-grey-100">
+            <div className="overflow-hidden rounded-lg border border-grey-300 bg-grey-100">
               <iframe
-                className="h-[720px] w-full bg-white"
+                className="h-[64vh] min-h-[520px] w-full bg-white md:h-[720px]"
                 src={pdfPreviewFitUrl}
                 title={`${selectedQuarterMeta.label} Form ${selectedQuarterMeta.formCode} PDF preview`}
               />
             </div>
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
               <FileTaxReturnForm quarter={selectedQuarter} />
               <Link
-                className={buttonClass("soft")}
+                className={`${buttonClass("soft")} w-full sm:w-auto`}
                 href={`/filing?quarter=${selectedQuarter}&view=payment`}
               >
                 <CreditCard size={18} aria-hidden />
                 Pay
               </Link>
               <Link
-                className={buttonClass("primary")}
+                className={`${buttonClass("primary")} w-full sm:w-auto`}
                 href={`/filing?quarter=${selectedQuarter}&view=payment&flow=file-and-pay`}
               >
                 <CreditCard size={18} aria-hidden />

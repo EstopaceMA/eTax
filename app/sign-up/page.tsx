@@ -13,10 +13,10 @@ export default async function SignUpPage({
   const params = await searchParams;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-grey-100 px-4 py-8">
-      <Card className="w-full max-w-3xl">
+    <main className="min-h-screen bg-grey-100 px-3 py-4 md:grid md:place-items-center md:px-4 md:py-8">
+      <Card className="mx-auto w-full max-w-3xl">
         <BrandLogo size="sm" priority />
-        <h1 className="mt-3 text-3xl font-extrabold text-grey-900">
+        <h1 className="mt-4 text-3xl font-black leading-tight text-grey-900">
           Create workspace
         </h1>
         <p className="mt-2 text-sm leading-6 text-grey-600">
@@ -24,7 +24,7 @@ export default async function SignUpPage({
           sets the starting profile for your checklist and filing tracker.
         </p>
         {params.error ? (
-          <p className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm font-semibold text-red-800">
+          <p className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-semibold text-red-800">
             {params.error}
           </p>
         ) : null}
@@ -36,7 +36,7 @@ export default async function SignUpPage({
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               {taxpayerCategories.map((category) => (
                 <label
-                  className="group block cursor-pointer rounded-2xl border border-[rgba(145,158,171,0.24)] bg-white p-4 transition hover:border-primary-500 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50"
+                  className="group block cursor-pointer rounded-lg border border-grey-300 bg-white p-4 transition hover:border-primary-500 has-[:checked]:border-primary-500 has-[:checked]:bg-primary-50"
                   key={category.key}
                 >
                   <div className="flex items-start gap-3">
@@ -97,7 +97,7 @@ export default async function SignUpPage({
               type="password"
             />
           </label>
-          <button className={buttonClass("primary")} type="submit">
+          <button className={`${buttonClass("primary")} w-full`} type="submit">
             Create workspace
           </button>
         </form>

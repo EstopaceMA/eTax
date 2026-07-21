@@ -57,7 +57,7 @@ export function IncomeRecordUploadForm({
   return (
     <form
       action={uploadIncomeRecord}
-      className="rounded-xl border border-dashed border-primary-300 bg-primary-50 p-4"
+      className="rounded-lg border border-dashed border-primary-300 bg-primary-50 p-4"
       onSubmit={(event) => {
         const fileInput = event.currentTarget.elements.namedItem("file");
 
@@ -87,7 +87,7 @@ export function IncomeRecordUploadForm({
       {isProcessing ? (
         <div
           aria-live="polite"
-          className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center"
+          className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-primary-700 shadow-sm">
             <Loader2 className="animate-spin" size={24} aria-hidden />
@@ -123,7 +123,7 @@ export function IncomeRecordUploadForm({
             />
           </label>
           <div className="self-end">
-            <SubmitButton pendingLabel="Uploading...">
+            <SubmitButton className="w-full md:w-auto" pendingLabel="Uploading...">
               <Upload size={18} aria-hidden />
               <span>Upload</span>
             </SubmitButton>
@@ -148,7 +148,7 @@ export function IncomeRecordTotalForm({
   const inputId = `income-total-${id}`;
 
   return (
-    <form action={updateIncomeRecordTotal} className="contents">
+    <form action={updateIncomeRecordTotal} className="grid gap-2 sm:contents">
       <input name="id" type="hidden" value={id} />
       <input name="quarter" type="hidden" value={quarter} />
       <input name="storage_path" type="hidden" value={storagePath} />
@@ -159,7 +159,7 @@ export function IncomeRecordTotalForm({
         Total income
       </label>
       <input
-        className="col-span-2 min-h-10 w-full rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+        className="min-h-10 w-full rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:col-span-2"
         defaultValue={totalIncome ?? ""}
         id={inputId}
         min="0"
@@ -170,7 +170,7 @@ export function IncomeRecordTotalForm({
       />
       <SubmitButton
         ariaLabel="Save total income"
-        className="col-start-2 min-h-10 w-full px-3"
+        className="min-h-10 w-full px-3 sm:col-start-2"
         pendingLabel="Saving..."
         variant="secondary"
       >

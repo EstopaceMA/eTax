@@ -9,7 +9,7 @@ function FileButton() {
   const { pending } = useFormStatus();
 
   return (
-    <button className={buttonClass("soft")} disabled={pending} type="submit">
+    <button className={`${buttonClass("soft")} w-full sm:w-auto`} disabled={pending} type="submit">
       {pending ? (
         <LoaderCircle aria-hidden className="animate-spin" size={18} />
       ) : (

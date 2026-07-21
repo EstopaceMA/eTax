@@ -83,6 +83,15 @@ export function AssistantChat() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
 
+  useEffect(() => {
+    function openFromNav() {
+      setIsOpen(true);
+    }
+
+    window.addEventListener("etax:open-assistant", openFromNav);
+    return () => window.removeEventListener("etax:open-assistant", openFromNav);
+  }, []);
+
   async function sendQuestion(value: string) {
     const trimmedQuestion = value.trim();
 
@@ -163,7 +172,7 @@ export function AssistantChat() {
     return (
       <button
         aria-label="Open eTax AI Assistant"
-        className="group fixed bottom-5 right-5 z-50 flex size-16 items-center justify-center overflow-visible rounded-full border border-white/20 bg-grey-900 shadow-[0_14px_35px_rgba(20,26,33,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(20,26,33,0.34)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 md:bottom-7 md:right-7"
+        className="group fixed bottom-7 right-7 z-50 hidden size-16 items-center justify-center overflow-visible rounded-full border border-white/20 bg-grey-900 shadow-[0_14px_35px_rgba(20,26,33,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(20,26,33,0.34)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 lg:flex"
         onClick={() => setIsOpen(true)}
         type="button"
       >
@@ -185,10 +194,10 @@ export function AssistantChat() {
     <section
       aria-labelledby={titleId}
       aria-modal="false"
-      className="fixed inset-x-3 bottom-3 z-50 flex h-[min(680px,calc(100dvh-24px))] flex-col overflow-hidden rounded-[24px] border border-[rgba(145,158,171,0.24)] bg-white shadow-[0_24px_70px_rgba(20,26,33,0.24)] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[600px] sm:w-[390px]"
+      className="fixed inset-x-3 bottom-24 z-50 flex h-[min(620px,calc(100dvh-112px))] flex-col overflow-hidden rounded-lg border border-grey-300 bg-white shadow-[0_24px_70px_rgba(20,26,33,0.24)] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[600px] sm:w-[390px]"
       role="dialog"
     >
-      <header className="flex h-[72px] shrink-0 items-center gap-3 border-b border-[rgba(145,158,171,0.16)] bg-grey-900 px-4 text-white">
+      <header className="flex h-[72px] shrink-0 items-center gap-3 border-b border-grey-300 bg-grey-900 px-4 text-white">
         <div className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/10">
           <MessageCircleQuestion aria-hidden="true" className="size-5 text-primary-300" />
           <span className="absolute bottom-1 right-1 size-2 rounded-full border border-grey-900 bg-success-500" />
@@ -241,8 +250,8 @@ export function AssistantChat() {
               <div
                 className={
                   message.role === "user"
-                    ? "rounded-2xl rounded-br-sm bg-primary-700 px-3.5 py-3 text-sm leading-6 text-white"
-                    : "rounded-2xl rounded-bl-sm border border-[rgba(145,158,171,0.18)] bg-white px-3.5 py-3 text-sm leading-6 text-grey-800 shadow-sm"
+                    ? "rounded-lg rounded-br-sm bg-primary-700 px-3.5 py-3 text-sm leading-6 text-white"
+                    : "rounded-lg rounded-bl-sm border border-grey-300 bg-white px-3.5 py-3 text-sm leading-6 text-grey-800 shadow-sm"
                 }
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
@@ -254,7 +263,7 @@ export function AssistantChat() {
             <div className="grid gap-2 pt-1">
               {suggestions.map((suggestion) => (
                 <button
-                  className="min-h-11 rounded-xl border border-primary-500/30 bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-primary-900 transition hover:border-primary-500 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+                  className="min-h-11 rounded-lg border border-primary-500/30 bg-white px-3 py-2 text-left text-xs font-semibold leading-5 text-primary-900 transition hover:border-primary-500 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
                   key={suggestion}
                   onClick={() => void sendQuestion(suggestion)}
                   type="button"
@@ -266,7 +275,7 @@ export function AssistantChat() {
           ) : null}
 
           {isSending ? (
-            <div className="mr-auto flex min-h-11 items-center gap-2 rounded-2xl rounded-bl-sm border border-[rgba(145,158,171,0.18)] bg-white px-3.5 text-sm text-grey-600 shadow-sm">
+            <div className="mr-auto flex min-h-11 items-center gap-2 rounded-lg rounded-bl-sm border border-grey-300 bg-white px-3.5 text-sm text-grey-600 shadow-sm">
               <LoaderCircle aria-hidden="true" className="size-4 animate-spin text-primary-500" />
               Checking your question…
             </div>
@@ -276,10 +285,10 @@ export function AssistantChat() {
       </div>
 
       <form
-        className="shrink-0 border-t border-[rgba(145,158,171,0.16)] bg-white p-3"
+        className="shrink-0 border-t border-grey-300 bg-white p-3"
         onSubmit={handleSubmit}
       >
-        <div className="flex min-h-[52px] items-end gap-2 rounded-2xl border border-grey-300 bg-white p-1.5 transition focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-50">
+        <div className="flex min-h-[52px] items-end gap-2 rounded-lg border border-grey-300 bg-white p-1.5 transition focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-50">
           <textarea
             aria-label="Ask eTax AI Assistant"
             className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-2 py-2 text-sm leading-5 text-grey-900 outline-none placeholder:text-grey-500"

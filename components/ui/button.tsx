@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
 const variants = {
-  primary: "bg-primary-500 text-white hover:bg-primary-700",
+  primary: "bg-primary-500 text-white shadow-[0_8px_18px_rgba(7,92,247,0.18)] hover:bg-primary-700",
   secondary:
-    "border border-[rgba(145,158,171,0.24)] bg-white text-grey-800 hover:border-primary-500 hover:text-primary-700",
-  soft: "bg-primary-50 text-primary-900 hover:bg-primary-300/30",
+    "border border-grey-300 bg-grey-50 text-grey-800 hover:border-primary-500 hover:text-primary-700",
+  soft: "bg-primary-50 text-primary-900 hover:bg-primary-100",
 };
 
 export function buttonClass(variant: keyof typeof variants = "primary") {

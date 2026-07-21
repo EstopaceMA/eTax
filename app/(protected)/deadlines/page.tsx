@@ -22,30 +22,30 @@ export default async function DeadlinesPage() {
   const { deadlines } = await getWorkspaceData();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold text-primary-700">Deadlines</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-grey-900 md:text-4xl">
+    <div className="space-y-5">
+      <div className="rounded-lg border border-grey-300 bg-grey-50 p-4 shadow-[0_10px_28px_rgba(20,26,33,0.05)] md:p-5">
+        <p className="text-xs font-bold uppercase text-primary-700">Deadlines</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight text-grey-900 md:text-4xl">
           Upcoming compliance dates
         </h1>
         <p className="mt-2 max-w-2xl text-grey-600">
           Use these reminders to prepare early before updating filing status.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {deadlines.map((deadline) => (
           <Card key={deadline.id}>
-            <div className="flex items-start gap-4">
-              <div className="rounded-2xl bg-amber-100 p-3 text-amber-800">
+            <div className="flex items-start gap-3">
+              <div className="rounded-lg bg-amber-100 p-3 text-amber-900">
                 <CalendarDays size={24} aria-hidden />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="text-lg font-extrabold text-grey-900">{deadline.title}</h2>
                   <StatusBadge status={deadline.status} />
                 </div>
                 <p className="mt-2 text-sm font-bold text-grey-700">
-                  {formatDate(deadline.due_date)} · {deadlineDistance(deadline.due_date)}
+                  {formatDate(deadline.due_date)} / {deadlineDistance(deadline.due_date)}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-grey-600">{deadline.description}</p>
                 <p className="mt-4 text-sm font-bold text-primary-700">{deadline.channel}</p>

@@ -16,10 +16,10 @@ export default async function ProfilePage() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-bold text-primary-700">Tax profile</p>
-        <h1 className="mt-2 text-3xl font-extrabold text-grey-900 md:text-4xl">
+    <div className="space-y-5">
+      <div className="rounded-lg border border-grey-300 bg-grey-50 p-4 shadow-[0_10px_28px_rgba(20,26,33,0.05)] md:p-5">
+        <p className="text-xs font-bold uppercase text-primary-700">Tax profile</p>
+        <h1 className="mt-2 text-3xl font-black leading-tight text-grey-900 md:text-4xl">
           Taxpayer profile details
         </h1>
         <p className="mt-2 max-w-2xl text-grey-600">
@@ -29,11 +29,11 @@ export default async function ProfilePage() {
         </p>
       </div>
       <Card>
-        <dl className="grid gap-4 md:grid-cols-2">
+        <dl className="grid gap-3 md:grid-cols-2">
           {fields.map(([label, value]) => (
-            <div className="rounded-xl bg-grey-100 p-4" key={label}>
-              <dt className="text-sm font-bold text-grey-500">{label}</dt>
-              <dd className="mt-2 font-semibold text-grey-900">{value}</dd>
+            <div className="rounded-lg border border-grey-300 bg-grey-100 p-4" key={label}>
+              <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
+              <dd className="mt-2 break-words font-semibold text-grey-900">{value}</dd>
             </div>
           ))}
         </dl>

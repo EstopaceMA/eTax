@@ -12,20 +12,20 @@ export default async function SignInPage({
   const params = await searchParams;
 
   return (
-    <main className="grid min-h-screen place-items-center bg-grey-100 px-4 py-8">
-      <Card className="w-full max-w-md">
+    <main className="min-h-screen bg-grey-100 px-3 py-4 md:grid md:place-items-center md:px-4 md:py-8">
+      <Card className="mx-auto w-full max-w-md">
         <BrandLogo size="sm" priority />
-        <h1 className="mt-3 text-3xl font-extrabold text-grey-900">Sign in</h1>
+        <h1 className="mt-4 text-3xl font-black leading-tight text-grey-900">Sign in</h1>
         <p className="mt-2 text-sm leading-6 text-grey-600">
           Open your taxpayer compliance workspace.
         </p>
         {params.error ? (
-          <p className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm font-semibold text-red-800">
+          <p className="mt-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-semibold text-red-800">
             {params.error}
           </p>
         ) : null}
         {params.message ? (
-          <p className="mt-4 rounded-xl bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-900">
+          <p className="mt-4 rounded-lg bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-900">
             {params.message}
           </p>
         ) : null}
@@ -48,7 +48,7 @@ export default async function SignInPage({
               type="password"
             />
           </label>
-          <button className={buttonClass("primary")} type="submit">
+          <button className={`${buttonClass("primary")} w-full`} type="submit">
             Sign in
           </button>
         </form>
