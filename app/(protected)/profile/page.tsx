@@ -1,3 +1,5 @@
+import { signOut } from "@/app/actions/auth";
+import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getWorkspaceData } from "@/lib/data";
 
@@ -37,6 +39,21 @@ export default async function ProfilePage() {
             </div>
           ))}
         </dl>
+      </Card>
+      <Card>
+        <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <h2 className="text-lg font-extrabold text-grey-900">Account access</h2>
+            <p className="mt-1 text-sm leading-6 text-grey-600">
+              Sign out of this eTax workspace on this device.
+            </p>
+          </div>
+          <form action={signOut} className="grid">
+            <button className={`${buttonClass("secondary")} w-full md:w-auto`} type="submit">
+              Sign out
+            </button>
+          </form>
+        </div>
       </Card>
     </div>
   );
