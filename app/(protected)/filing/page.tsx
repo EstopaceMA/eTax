@@ -21,6 +21,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ClipboardCheck,
+  CreditCard,
   Download,
   FileText,
   ShieldCheck,
@@ -63,6 +64,7 @@ export default async function FilingPage({
 }: {
   searchParams?: Promise<{
     filing?: string;
+    flow?: string;
     payment?: string;
     quarter?: string;
     sms?: string;
@@ -112,6 +114,7 @@ export default async function FilingPage({
   const paymentSucceeded =
     params?.payment === "success" || params?.payment === "returned";
   const paymentSmsStatus = params?.sms;
+  const fileBeforePay = params?.flow === "file-and-pay";
   const filingNotice =
     params?.filing === "filed"
       ? params?.sms === "sent"
@@ -455,8 +458,9 @@ export default async function FilingPage({
                 </div>
                 <div className="p-5">
                   <p className="text-sm text-grey-600">
-                    Continue to the hosted eGovPay test gateway to pay your tax
-                    amount.
+                    {fileBeforePay
+                      ? "eTax will file this return for you before opening the hosted eGovPay test gateway."
+                      : "Continue to the hosted eGovPay test gateway to pay your tax amount."}
                   </p>
                   <div className="mt-4 rounded-lg bg-grey-100 p-4">
                     <p className="text-xs font-bold uppercase text-grey-500">
@@ -477,7 +481,15 @@ export default async function FilingPage({
                     </p>
                   ) : null}
                   <div className="mt-5 grid gap-2">
-                    <EgovPayCheckoutForm quarter={selectedQuarter} />
+                    <EgovPayCheckoutForm
+                      fileBeforePay={fileBeforePay}
+                      pendingLabel={
+                        fileBeforePay
+                          ? "Filing then opening eGovPay..."
+                          : "Opening eGovPay..."
+                      }
+                      quarter={selectedQuarter}
+                    />
                     <Link
                       className={buttonClass("secondary")}
                       href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
@@ -517,17 +529,20 @@ export default async function FilingPage({
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               <FileTaxReturnForm quarter={selectedQuarter} />
-              <EgovPayCheckoutForm
-                label="Pay"
-                quarter={selectedQuarter}
-                variant="soft"
-              />
-              <EgovPayCheckoutForm
-                fileBeforePay
-                label="File & Pay"
-                pendingLabel="Filing then opening eGovPay..."
-                quarter={selectedQuarter}
-              />
+              <Link
+                className={buttonClass("soft")}
+                href={`/filing?quarter=${selectedQuarter}&view=payment`}
+              >
+                <CreditCard size={18} aria-hidden />
+                Pay
+              </Link>
+              <Link
+                className={buttonClass("primary")}
+                href={`/filing?quarter=${selectedQuarter}&view=payment&flow=file-and-pay`}
+              >
+                <CreditCard size={18} aria-hidden />
+                File &amp; Pay
+              </Link>
             </div>
           </>
         )}
