@@ -133,8 +133,8 @@ export default async function FilingPage({
       </div>
 
       <div className="space-y-3">
-        <div className="-mx-3 overflow-x-auto px-3 md:mx-0 md:px-0">
-          <div className="grid min-w-[720px] grid-cols-4 gap-2 rounded-lg border border-grey-300 bg-grey-50 p-1 shadow-[0_8px_22px_rgba(20,26,33,0.05)] md:min-w-0">
+        <div className="scrollbar-hidden overflow-x-auto overscroll-x-contain rounded-lg px-3 py-2 [scroll-padding-inline:12px] md:px-0">
+          <div className="grid min-w-[720px] grid-cols-4 gap-3 rounded-lg border border-grey-300 bg-grey-50 p-2 shadow-[0_8px_22px_rgba(20,26,33,0.05)] md:min-w-0">
             {quarterlyObligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
               const isSelected = quarter === selectedQuarter;
               const isOpen = isFilingPeriodOpen(opensOn);

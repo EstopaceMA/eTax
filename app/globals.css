@@ -54,3 +54,12 @@ select {
   background: #eaf2ff;
   color: #062b73;
 }
+
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
