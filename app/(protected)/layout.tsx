@@ -4,8 +4,6 @@ import {
   ClipboardCheck,
   FileCheck2,
   LayoutDashboard,
-  Link2,
-  Map,
   UserRound,
 } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
@@ -15,11 +13,9 @@ import { buttonClass } from "@/components/ui/button";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/profile", label: "Tax profile", icon: UserRound },
-  { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/documents", label: "Documents", icon: ClipboardCheck },
   { href: "/deadlines", label: "Deadlines", icon: CalendarDays },
   { href: "/filing", label: "Filing tracker", icon: FileCheck2 },
-  { href: "/mock-filing", label: "Mock filing", icon: Link2 },
 ];
 
 export default async function ProtectedLayout({
@@ -63,7 +59,7 @@ export default async function ProtectedLayout({
             </button>
           </form>
         </header>
-        <nav className="grid grid-cols-4 gap-2 border-b border-[rgba(145,158,171,0.16)] bg-white p-2 lg:hidden">
+        <nav className="grid grid-cols-5 gap-2 border-b border-[rgba(145,158,171,0.16)] bg-white p-2 lg:hidden">
           {navItems.map((item) => (
             <Link
               className="flex min-h-12 flex-col items-center justify-center rounded-lg text-xs font-bold text-grey-600 hover:bg-primary-50 hover:text-primary-900 focus-visible:outline-2 focus-visible:outline-offset-2"
@@ -75,7 +71,7 @@ export default async function ProtectedLayout({
             </Link>
           ))}
         </nav>
-        <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">
+        <main className="mx-auto max-w-6xl px-3 py-4 md:px-5 md:py-5">
           {children}
         </main>
       </div>

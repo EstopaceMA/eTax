@@ -1,4 +1,3 @@
-export type RoadmapStatus = "draft" | "ready" | "filed" | "paid" | "blocked";
 export type ChecklistStatus = "missing" | "complete";
 export type DeadlineStatus = "upcoming" | "due_soon" | "completed" | "overdue";
 export type FilingStatus = "draft" | "ready" | "filed" | "paid";
@@ -19,16 +18,6 @@ export type TaxpayerProfile = {
   tin_status: string;
   rdo: string | null;
   filing_frequency: string;
-};
-
-export type RoadmapStep = {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  status: RoadmapStatus;
-  sort_order: number;
-  handoff_key: string | null;
 };
 
 export type DocumentChecklistItem = {
@@ -60,21 +49,25 @@ export type FilingObligation = {
   payment_status: PaymentStatus;
 };
 
-export type MockFilingModule = {
+export type IncomeRecordUpload = {
   id: string;
-  key: string;
-  name: string;
-  description: string;
-  url: string | null;
-  external: boolean;
+  user_id: string;
+  quarter: number;
+  period: string;
+  original_filename: string;
+  storage_path: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  total_income: number | null;
+  created_at: string;
+  signed_url?: string;
 };
 
 export type WorkspaceData = {
   profile: Profile | null;
   taxpayerProfile: TaxpayerProfile | null;
-  roadmapSteps: RoadmapStep[];
   checklistItems: DocumentChecklistItem[];
   deadlines: Deadline[];
   filingObligations: FilingObligation[];
-  mockFilingModules: MockFilingModule[];
+  incomeRecordUploads: IncomeRecordUpload[];
 };

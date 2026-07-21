@@ -66,7 +66,7 @@ Email: demo@etax.local
 Password: DemoPass123!
 ```
 
-The demo account is an already-registered taxpayer with seeded profile, roadmap, checklist, deadlines, filing obligations, and mock filing modules.
+The demo account is an already-registered taxpayer with seeded profile, checklist, deadlines, and filing obligations.
 
 ## Verification
 
@@ -80,4 +80,4 @@ npm run build
 
 ## Product Boundary
 
-eTax is a guidance, readiness, and mock filing workspace. It does not submit real tax filings, process real payments, compute tax obligations for all taxpayer categories, or provide legal/tax advisory services.
+eTax is a guidance, readiness, and filing tracker workspace. It can generate profile-populated PDF previews for review, but it does not submit real tax filings, process real payments, compute tax obligations for all taxpayer categories, or provide legal/tax advisory services.

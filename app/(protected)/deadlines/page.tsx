@@ -15,7 +15,7 @@ export default async function DeadlinesPage() {
           Upcoming compliance dates
         </h1>
         <p className="mt-2 max-w-2xl text-grey-600">
-          Use these reminders to prepare early before completing a mock filing.
+          Use these reminders to prepare early before updating filing status.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

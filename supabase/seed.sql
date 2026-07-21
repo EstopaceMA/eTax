@@ -84,8 +84,8 @@ values (
   'Self-employed professional / freelancer',
   'Self-employed professional',
   'Already registered',
-  'TIN available',
-  'RDO on record',
+  '123-456-789-000',
+  'RDO 043A - East Pasig',
   'Quarterly and monthly checks'
 )
 on conflict (id) do update set
@@ -95,68 +95,6 @@ on conflict (id) do update set
   tin_status = excluded.tin_status,
   rdo = excluded.rdo,
   filing_frequency = excluded.filing_frequency;
-
-insert into public.roadmap_steps (
-  id,
-  user_id,
-  title,
-  description,
-  status,
-  sort_order,
-  handoff_key
-)
-values
-  (
-    '31111111-1111-4111-8111-111111111111',
-    '11111111-1111-4111-8111-111111111111',
-    'Confirm registered taxpayer profile',
-    'Review your TIN, RDO, registration status, and filing cadence before preparing a return.',
-    'filed',
-    1,
-    'profile-review'
-  ),
-  (
-    '31111111-1111-4111-8111-111111111112',
-    '11111111-1111-4111-8111-111111111111',
-    'Prepare filing documents',
-    'Gather registration details, income records, expense notes, and prior payment references.',
-    'ready',
-    2,
-    null
-  ),
-  (
-    '31111111-1111-4111-8111-111111111113',
-    '11111111-1111-4111-8111-111111111111',
-    'Run pre-filing readiness',
-    'Check whether required documents and status fields are complete before starting a mock filing.',
-    'ready',
-    3,
-    'readiness-check'
-  ),
-  (
-    '31111111-1111-4111-8111-111111111114',
-    '11111111-1111-4111-8111-111111111111',
-    'Complete mock filing',
-    'Review the simulated filing details and submit the mock return inside eTax.',
-    'draft',
-    4,
-    'mock-submit'
-  ),
-  (
-    '31111111-1111-4111-8111-111111111115',
-    '11111111-1111-4111-8111-111111111111',
-    'Mark filed and paid',
-    'Update your mock filing and payment status so the compliance tracker stays current.',
-    'draft',
-    5,
-    null
-  )
-on conflict (id) do update set
-  title = excluded.title,
-  description = excluded.description,
-  status = excluded.status,
-  sort_order = excluded.sort_order,
-  handoff_key = excluded.handoff_key;
 
 insert into public.document_checklist_items (
   id,
@@ -171,7 +109,7 @@ values
     '41111111-1111-4111-8111-111111111111',
     '11111111-1111-4111-8111-111111111111',
     'Certificate of Registration details',
-    'Keep registration details nearby to confirm tax types and RDO for the mock filing.',
+    'Keep registration details nearby to confirm tax types and RDO before filing.',
     true,
     'complete'
   ),
@@ -179,7 +117,7 @@ values
     '41111111-1111-4111-8111-111111111112',
     '11111111-1111-4111-8111-111111111111',
     'TIN and registered address',
-    'Confirm your TIN and registered address before using the mock filing flow.',
+    'Confirm your TIN and registered address before updating filing status.',
     true,
     'complete'
   ),
@@ -227,10 +165,10 @@ values
     '51111111-1111-4111-8111-111111111111',
     '11111111-1111-4111-8111-111111111111',
     'Quarterly income tax preparation',
-    'Review income records and missing checklist items before starting mock filing.',
+    'Review income records and missing checklist items before filing.',
     '2026-08-15',
     'due_soon',
-    'Mock filing'
+    'Filing tracker'
   ),
   (
     '51111111-1111-4111-8111-111111111112',
@@ -239,13 +177,13 @@ values
     'Confirm whether this obligation applies to your registered tax type before proceeding.',
     '2026-08-20',
     'upcoming',
-    'Mock filing'
+    'Filing tracker'
   ),
   (
     '51111111-1111-4111-8111-111111111113',
     '11111111-1111-4111-8111-111111111111',
     'Registration record check',
-    'Review whether any profile details should be updated before your mock workflow.',
+    'Review whether any profile details should be updated before filing.',
     '2026-09-05',
     'upcoming',
     'Profile review'
@@ -271,28 +209,37 @@ values
     '61111111-1111-4111-8111-111111111111',
     '11111111-1111-4111-8111-111111111111',
     'Quarterly income tax return',
+    'Q1 2026',
+    '2026-05-15',
+    'draft',
+    'unpaid'
+  ),
+  (
+    '61111111-1111-4111-8111-111111111112',
+    '11111111-1111-4111-8111-111111111111',
+    'Quarterly income tax return',
     'Q2 2026',
     '2026-08-15',
     'ready',
     'unpaid'
   ),
   (
-    '61111111-1111-4111-8111-111111111112',
+    '61111111-1111-4111-8111-111111111113',
     '11111111-1111-4111-8111-111111111111',
-    'Monthly percentage tax',
-    'July 2026',
-    '2026-08-20',
+    'Quarterly income tax return',
+    'Q3 2026',
+    '2026-11-15',
     'draft',
     'unpaid'
   ),
   (
-    '61111111-1111-4111-8111-111111111113',
+    '61111111-1111-4111-8111-111111111114',
     '11111111-1111-4111-8111-111111111111',
-    'Registration profile review',
-    '2026 annual check',
-    '2026-09-05',
+    'Annual income tax return',
+    'Annual 2026',
+    '2027-04-15',
     'draft',
-    'not_required'
+    'unpaid'
   )
 on conflict (id) do update set
   form_name = excluded.form_name,

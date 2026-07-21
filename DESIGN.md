@@ -4,7 +4,7 @@
 
 eTax should use the Minimals visual system as its foundation: clean Material UI structure, restrained surfaces, soft depth, strong readability, and dashboard-first interaction patterns.
 
-The product should feel like a calm compliance workspace rather than a marketing site. Users are often uncertain about tax obligations, so the interface must make progress, next steps, missing items, and mock filing status obvious without making the experience feel legalistic or intimidating.
+The product should feel like a calm compliance workspace rather than a marketing site. Users are often uncertain about tax obligations, so the interface must make progress, next steps, missing items, and filing status obvious without making the experience feel legalistic or intimidating.
 
 Primary design reference: Minimals UI Kit at https://minimals.cc/ and Minimal UI documentation at https://docs.minimals.cc/.
 
@@ -30,8 +30,8 @@ Minimals is built on Material UI and organized around reusable atomic design com
 
 - Foundation: color, typography, spacing, shadows, radius, icons.
 - Components: buttons, inputs, cards, alerts, labels, lists, tables, tabs, dialogs.
-- Patterns: onboarding flows, task checklists, readiness checks, status dashboards, mock filing flows.
-- Pages: dashboard, registration journey, document checklist, deadline calendar, filing tracker.
+- Patterns: onboarding flows, task checklists, readiness checks, status dashboards, and quarterly filing trackers.
+- Pages: dashboard, tax profile, document checklist, deadline calendar, and filing tracker.
 
 ## Color System
 
@@ -63,7 +63,7 @@ Use secondary sparingly. eTax should not become a purple dashboard.
 
 | Token | Hex | Usage |
 | --- | --- | --- |
-| `info.main` | `#00B8D9` | Informational guidance and mock filing context. |
+| `info.main` | `#00B8D9` | Informational guidance and filing tracker context. |
 | `success.main` | `#22C55E` | Completed tasks, filed, paid, ready. |
 | `warning.main` | `#FFAB00` | Upcoming deadlines, incomplete readiness. |
 | `error.main` | `#FF5630` | Overdue, blocked, missing required information. |
@@ -106,7 +106,7 @@ Use Minimals typography defaults:
 ### Copy Rules
 
 - Use sentence case for headings, buttons, labels, and menu items.
-- Prefer direct action labels: `Start registration checklist`, `Review missing items`, `Start mock filing`.
+- Prefer direct action labels: `Start registration checklist`, `Review missing items`, `Update filing status`.
 - Avoid tax jargon unless paired with a plain-language explanation.
 - Use short helper text that explains what the user can decide or do.
 - Avoid phrases that imply certified tax advice.
@@ -183,7 +183,7 @@ Each main app page should follow this rhythm:
 |            |                                         |
 |            | Status summary cards                     |
 |            |                                         |
-|            | Checklist / roadmap / calendar           |
+|            | Checklist / deadlines / profile filing   |
 |            |                                         |
 |            | Handoff and recent activity              |
 +------------+-----------------------------------------+
@@ -197,17 +197,15 @@ Each main app page should follow this rhythm:
 - Secondary button: soft primary background or outlined neutral.
 - Destructive button: use `error.main` only for real destructive actions.
 - Buttons should include icons when the action is directional, external, status-changing, or tool-like.
-- Button text should describe the result: `Save profile`, `Start mock filing`, `Mark as paid`.
+- Button text should describe the result: `Save profile`, `Update filing status`, `Mark as paid`.
 
 ### Cards
 
 Use cards for discrete objects:
 
-- Roadmap step.
 - Document requirement.
 - Deadline.
 - Filing obligation.
-- Mock filing module.
 
 Cards should include a clear title, status, relevant metadata, and one obvious action when needed.
 
@@ -226,7 +224,7 @@ Use pill chips with both color and text:
 
 Use alerts for actionable system guidance:
 
-- Info: explain a mock filing step.
+- Info: explain a filing status or readiness step.
 - Warning: show upcoming deadline or incomplete readiness.
 - Error: explain missing required details.
 - Success: confirm saved, filed, paid, or completed status.
@@ -266,28 +264,25 @@ Recommended primary navigation:
 
 - Dashboard.
 - Tax profile.
-- Roadmap.
 - Documents.
 - Deadlines.
 - Filing tracker.
-- Mock filing.
 
 Use active navigation with `primary.main` and soft primary background.
 
 ## eTax Signature Pattern
 
-Use a `Compliance Roadmap` as the product's signature interface element.
+Use a `Filing Readiness Panel` as the product's signature interface element.
 
-It should be a vertical or horizontal stepper that shows:
+It should be a compact dashboard panel that shows:
 
-- Setup.
-- Registration.
-- Documents.
-- Readiness.
-- Filing.
-- Payment.
+- Required profile details.
+- Missing documents.
+- Next deadline.
+- Current filing status.
+- Payment status.
 
-Each step should show status, missing items, deadline proximity, and the next mock filing action. This gives eTax a recognizable interaction pattern while staying inside the Minimals design language.
+Each row should show status, missing items, and the next useful action. This gives eTax a recognizable interaction pattern while staying inside the Minimals design language.
 
 ## Dark Mode
 
@@ -316,8 +311,7 @@ Never invert semantic meaning in dark mode. Warning, error, success, and info st
 Use motion only to support understanding:
 
 - Checklist completion: quick check transition.
-- Roadmap progression: subtle step reveal.
-- Mock filing submission: short confirmation state before status changes.
+- Filing status updates: short confirmation state before status changes.
 - Loading states: skeletons instead of spinners for dashboard content.
 
 Avoid decorative animation in tax workflows.
@@ -330,7 +324,7 @@ Avoid decorative animation in tax workflows.
 - Use `Public Sans` for the app shell and content.
 - Use `Barlow` only for high-emphasis metric displays.
 - Keep page sections unframed; use cards only for repeated objects or modals.
-- Use mock filing actions as in-product steps with clear status outcomes.
+- Use filing tracker actions as in-product steps with clear status outcomes.
 
 ## Sources
 

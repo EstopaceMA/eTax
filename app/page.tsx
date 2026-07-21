@@ -21,7 +21,7 @@ export default function HomePage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-grey-600">
             eTax gives Filipino taxpayers a guided workspace for documents,
-            deadlines, readiness, filing status, and mock filing.
+            deadlines, readiness, and filing status.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link className={buttonClass("primary")} href="/sign-up">
@@ -48,7 +48,7 @@ export default function HomePage() {
             {[
               "Confirm registered profile",
               "Prepare income records",
-              "Review mock filing",
+              "Update filing status",
             ].map((item, index) => (
               <div
                 className="flex items-center justify-between rounded-xl bg-grey-100 px-4 py-3"

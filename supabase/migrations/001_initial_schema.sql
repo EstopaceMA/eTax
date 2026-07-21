@@ -21,18 +21,6 @@ create table if not exists public.taxpayer_profiles (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.roadmap_steps (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  title text not null,
-  description text not null,
-  status text not null check (status in ('draft', 'ready', 'filed', 'paid', 'blocked')),
-  sort_order integer not null,
-  handoff_key text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create table if not exists public.document_checklist_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -68,22 +56,11 @@ create table if not exists public.filing_obligations (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.mock_filing_modules (
-  id uuid primary key default gen_random_uuid(),
-  key text not null unique,
-  name text not null,
-  description text not null,
-  url text,
-  external boolean not null default false
-);
-
 alter table public.profiles enable row level security;
 alter table public.taxpayer_profiles enable row level security;
-alter table public.roadmap_steps enable row level security;
 alter table public.document_checklist_items enable row level security;
 alter table public.deadlines enable row level security;
 alter table public.filing_obligations enable row level security;
-alter table public.mock_filing_modules enable row level security;
 
 create policy "Users can read own profile"
   on public.profiles for select
@@ -107,12 +84,6 @@ create policy "Users can manage own taxpayer profile"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
-create policy "Users can manage own roadmap"
-  on public.roadmap_steps for all
-  to authenticated
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
-
 create policy "Users can manage own documents"
   on public.document_checklist_items for all
   to authenticated
@@ -130,44 +101,3 @@ create policy "Users can manage own filing obligations"
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
-
-create policy "Authenticated users can read mock filing modules"
-  on public.mock_filing_modules for select
-  to authenticated
-  using (true);
-
-insert into public.mock_filing_modules (key, name, description, url, external)
-values
-  (
-    'profile-review',
-    'Profile review',
-    'Review taxpayer category, TIN status, registration status, and filing cadence before preparing a mock return.',
-    null,
-    false
-  ),
-  (
-    'readiness-check',
-    'Readiness check',
-    'Confirm required profile details and checklist items before starting a mock filing.',
-    null,
-    false
-  ),
-  (
-    'mock-submit',
-    'Mock filing submission',
-    'Simulate reviewing a return, submitting it, and moving the obligation to filed status.',
-    null,
-    false
-  ),
-  (
-    'mock-payment',
-    'Mock payment status',
-    'Practice marking a simulated payment as unpaid, paid, or not required.',
-    null,
-    false
-  )
-on conflict (key) do update set
-  name = excluded.name,
-  description = excluded.description,
-  url = excluded.url,
-  external = excluded.external;

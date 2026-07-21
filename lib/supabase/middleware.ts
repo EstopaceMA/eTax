@@ -33,11 +33,9 @@ export async function updateSession(request: NextRequest) {
 
   const protectedRoute = request.nextUrl.pathname.startsWith("/dashboard") ||
     request.nextUrl.pathname.startsWith("/profile") ||
-    request.nextUrl.pathname.startsWith("/roadmap") ||
     request.nextUrl.pathname.startsWith("/documents") ||
     request.nextUrl.pathname.startsWith("/deadlines") ||
-    request.nextUrl.pathname.startsWith("/filing") ||
-    request.nextUrl.pathname.startsWith("/mock-filing");
+    request.nextUrl.pathname.startsWith("/filing");
 
   if (protectedRoute && !user) {
     const url = request.nextUrl.clone();

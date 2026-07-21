@@ -1,20 +1,23 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   starterChecklistItems,
   starterDeadlines,
-  starterFilingObligations,
-  starterRoadmapSteps,
 } from "@/lib/demo-data";
+import {
+  filingQuarters,
+  getPeriodSlug,
+  getQuarterlyFilingSeeds,
+} from "@/lib/filing-periods";
 import { getTaxpayerCategoryDefaults } from "@/lib/taxpayer-categories";
 import type {
   Deadline,
   DocumentChecklistItem,
   FilingObligation,
-  MockFilingModule,
+  IncomeRecordUpload,
   Profile,
-  RoadmapStep,
   TaxpayerProfile,
   WorkspaceData,
 } from "@/lib/types";
@@ -67,22 +70,17 @@ export async function ensureWorkspace() {
       taxpayer_type: defaults.taxpayerType,
       work_type: defaults.workType,
       registration_status: "Already registered",
-      tin_status: "TIN available",
-      rdo: "RDO on record",
+      tin_status: "123-456-789-000",
+      rdo: "RDO 043A - East Pasig",
       filing_frequency: defaults.filingFrequency,
     });
   }
 
   const [
-    { count: roadmapCount },
     { count: checklistCount },
     { count: deadlineCount },
-    { count: filingCount },
+    existingFilingsResult,
   ] = await Promise.all([
-    supabase
-      .from("roadmap_steps")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id),
     supabase
       .from("document_checklist_items")
       .select("id", { count: "exact", head: true })
@@ -93,16 +91,24 @@ export async function ensureWorkspace() {
       .eq("user_id", user.id),
     supabase
       .from("filing_obligations")
-      .select("id", { count: "exact", head: true })
+      .select("period")
       .eq("user_id", user.id),
   ]);
 
+  const existingFilingPeriods = new Set(
+    (existingFilingsResult.data as Array<{ period: string }> | null)?.map(
+      ({ period }) => period,
+    ) ?? [],
+  );
+  const quarterlySeeds = getQuarterlyFilingSeeds();
+  const missingQuarterlyFilings = quarterlySeeds.filter(({ period }) => {
+    const meta = filingQuarters.find((quarter) => quarter.period === period);
+    const knownPeriods = [period, ...(meta?.periodAliases ?? [])];
+
+    return knownPeriods.every((knownPeriod) => !existingFilingPeriods.has(knownPeriod));
+  });
+
   await Promise.all([
-    roadmapCount === 0
-      ? supabase
-          .from("roadmap_steps")
-          .insert(starterRoadmapSteps.map((step) => ({ ...step, user_id: user.id })))
-      : Promise.resolve(),
     checklistCount === 0
       ? supabase.from("document_checklist_items").insert(
           starterChecklistItems.map((item) => ({ ...item, user_id: user.id })),
@@ -113,15 +119,63 @@ export async function ensureWorkspace() {
           .from("deadlines")
           .insert(starterDeadlines.map((deadline) => ({ ...deadline, user_id: user.id })))
       : Promise.resolve(),
-    filingCount === 0
+    missingQuarterlyFilings.length > 0
       ? supabase.from("filing_obligations").insert(
-          starterFilingObligations.map((obligation) => ({
+          missingQuarterlyFilings.map((obligation) => ({
             ...obligation,
             user_id: user.id,
           })),
         )
       : Promise.resolve(),
   ]);
+}
+
+async function getStorageIncomeRecordUploads(userId: string): Promise<IncomeRecordUpload[]> {
+  const adminSupabase = createAdminClient();
+  const uploads = await Promise.all(
+    filingQuarters.map(async (quarter) => {
+      const folder = `${userId}/${getPeriodSlug(quarter.period)}`;
+      const { data } = await adminSupabase.storage.from("income-records").list(folder, {
+        limit: 100,
+        sortBy: { column: "created_at", order: "desc" },
+      });
+
+      const imageFiles = (data ?? []).filter((file) => !file.name.endsWith(".metadata.json"));
+
+      return Promise.all(
+        imageFiles.map(async (file) => {
+          const storagePath = `${folder}/${file.name}`;
+          const [signedResult, metadataResult] = await Promise.all([
+            adminSupabase.storage.from("income-records").createSignedUrl(storagePath, 60 * 15),
+            adminSupabase.storage.from("income-records").download(`${storagePath}.metadata.json`),
+          ]);
+          const metadataText = metadataResult.data ? await metadataResult.data.text() : "";
+          const metadata = metadataText ? JSON.parse(metadataText) as { total_income?: number | null } : {};
+
+          return {
+            id: storagePath,
+            user_id: userId,
+            quarter: quarter.quarter,
+            period: quarter.period,
+            original_filename: file.name.replace(/^[0-9a-f-]+-/, ""),
+            storage_path: storagePath,
+            content_type:
+              typeof file.metadata?.mimetype === "string" ? file.metadata.mimetype : null,
+            size_bytes:
+              typeof file.metadata?.size === "number" ? file.metadata.size : file.metadata?.size
+                ? Number(file.metadata.size)
+                : null,
+            total_income:
+              typeof metadata.total_income === "number" ? metadata.total_income : null,
+            created_at: file.created_at ?? file.updated_at ?? new Date().toISOString(),
+            signed_url: signedResult.data?.signedUrl,
+          } satisfies IncomeRecordUpload;
+        }),
+      );
+    }),
+  );
+
+  return uploads.flat();
 }
 
 export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
@@ -132,19 +186,13 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
   const [
     profileResult,
     taxpayerResult,
-    roadmapResult,
     checklistResult,
     deadlinesResult,
     filingResult,
-    modulesResult,
+    incomeRecordsResult,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("taxpayer_profiles").select("*").eq("user_id", user.id).maybeSingle(),
-    supabase
-      .from("roadmap_steps")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("sort_order", { ascending: true }),
     supabase
       .from("document_checklist_items")
       .select("*")
@@ -160,16 +208,48 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
       .select("*")
       .eq("user_id", user.id)
       .order("due_date", { ascending: true }),
-    supabase.from("mock_filing_modules").select("*").order("name", { ascending: true }),
+    supabase
+      .from("income_record_uploads")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
+
+  const incomeRecordUploads = (incomeRecordsResult.data as IncomeRecordUpload[] | null) ?? [];
+  const signedIncomeRecordUploads = incomeRecordsResult.error
+    ? await getStorageIncomeRecordUploads(user.id)
+    : await Promise.all(
+        incomeRecordUploads.map(async (upload) => {
+          const adminSupabase = createAdminClient();
+          const [signedResult, metadataResult] = await Promise.all([
+            adminSupabase.storage
+              .from("income-records")
+              .createSignedUrl(upload.storage_path, 60 * 15),
+            adminSupabase.storage
+              .from("income-records")
+              .download(`${upload.storage_path}.metadata.json`),
+          ]);
+          const metadataText = metadataResult.data ? await metadataResult.data.text() : "";
+          const metadata = metadataText
+            ? (JSON.parse(metadataText) as { total_income?: number | null })
+            : {};
+
+      return {
+        ...upload,
+            total_income:
+              upload.total_income ??
+              (typeof metadata.total_income === "number" ? metadata.total_income : null),
+            signed_url: signedResult.data?.signedUrl,
+      };
+        }),
+      );
 
   return {
     profile: (profileResult.data as Profile | null) ?? null,
     taxpayerProfile: (taxpayerResult.data as TaxpayerProfile | null) ?? null,
-    roadmapSteps: (roadmapResult.data as RoadmapStep[] | null) ?? [],
     checklistItems: (checklistResult.data as DocumentChecklistItem[] | null) ?? [],
     deadlines: (deadlinesResult.data as Deadline[] | null) ?? [],
     filingObligations: (filingResult.data as FilingObligation[] | null) ?? [],
-    mockFilingModules: (modulesResult.data as MockFilingModule[] | null) ?? [],
+    incomeRecordUploads: signedIncomeRecordUploads,
   };
 });

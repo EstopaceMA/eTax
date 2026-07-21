@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/data";
+import { getPeriodSlug, getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
 import type { ChecklistStatus, FilingStatus, PaymentStatus } from "@/lib/types";
 
 export async function updateChecklistItem(formData: FormData) {
@@ -36,4 +39,139 @@ export async function updateFilingStatus(formData: FormData) {
 
   revalidatePath("/filing");
   revalidatePath("/dashboard");
+}
+
+export async function uploadIncomeRecord(formData: FormData) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
+  const file = formData.get("file");
+
+  if (!(file instanceof File) || file.size === 0) {
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return;
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "jpg";
+  const safeFilename = file.name
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48);
+  const storagePath = `${user.id}/${getPeriodSlug(quarterMeta.period)}/${randomUUID()}-${safeFilename || "income-record"}.${extension}`;
+  const uploadBody = Buffer.from(await file.arrayBuffer());
+
+  const { data: bucket } = await adminSupabase.storage.getBucket("income-records");
+
+  if (!bucket) {
+    const { error: bucketError } = await adminSupabase.storage.createBucket(
+      "income-records",
+      {
+        public: false,
+      },
+    );
+
+    if (bucketError) {
+      throw new Error(`Could not prepare income record storage: ${bucketError.message}`);
+    }
+  }
+
+  const { error: uploadError } = await adminSupabase.storage
+    .from("income-records")
+    .upload(storagePath, uploadBody, {
+      contentType: file.type,
+      upsert: false,
+  });
+
+  if (uploadError) {
+    throw new Error(`Could not upload income record image: ${uploadError.message}`);
+  }
+
+  const { error: insertError } = await supabase.from("income_record_uploads").insert({
+    user_id: user.id,
+    quarter,
+    period: quarterMeta.period,
+    original_filename: file.name,
+    storage_path: storagePath,
+    content_type: file.type,
+    size_bytes: file.size,
+  });
+
+  if (insertError) {
+    const missingMetadataTable =
+      insertError.message.includes("income_record_uploads") &&
+      insertError.message.includes("schema cache");
+
+    if (!missingMetadataTable) {
+      throw new Error(`Could not save income record metadata: ${insertError.message}`);
+    }
+  }
+
+  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  revalidatePath("/filing");
+}
+
+export async function updateIncomeRecordTotal(formData: FormData) {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const id = String(formData.get("id"));
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const storagePath = String(formData.get("storage_path") ?? "");
+  const rawTotalIncome = String(formData.get("total_income") ?? "").trim();
+
+  const totalIncome =
+    rawTotalIncome.length === 0 ? null : Number(rawTotalIncome.replace(/,/g, ""));
+
+  if (totalIncome !== null && (!Number.isFinite(totalIncome) || totalIncome < 0)) {
+    return;
+  }
+
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const isOwnStoragePath = storagePath.startsWith(`${user.id}/`);
+
+  if (isUuid) {
+    const { error } = await supabase
+      .from("income_record_uploads")
+      .update({ total_income: totalIncome })
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      const missingMetadataTable =
+        error.message.includes("income_record_uploads") && error.message.includes("schema cache");
+
+      if (!missingMetadataTable) {
+        throw new Error(`Could not update total income: ${error.message}`);
+      }
+    }
+  }
+
+  if (isOwnStoragePath) {
+    const metadataPath = `${storagePath}.metadata.json`;
+    const { error: metadataError } = await adminSupabase.storage
+      .from("income-records")
+      .upload(
+        metadataPath,
+        Buffer.from(JSON.stringify({ total_income: totalIncome })),
+        {
+          contentType: "application/json",
+          upsert: true,
+        },
+      );
+
+    if (metadataError) {
+      throw new Error(`Could not save total income metadata: ${metadataError.message}`);
+    }
+  }
+
+  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  revalidatePath("/filing");
 }

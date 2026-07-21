@@ -15,8 +15,7 @@ export default async function DocumentsPage() {
           Filing preparation checklist
         </h1>
         <p className="mt-2 max-w-2xl text-grey-600">
-          Mark preparation items complete before moving into the mock filing
-          flow.
+          Mark preparation items complete before updating filing status.
         </p>
       </div>
       <div className="space-y-4">

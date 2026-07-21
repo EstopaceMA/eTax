@@ -2,11 +2,11 @@
 
 ## Product Overview
 
-eTax is a tax guidance and compliance companion for Filipino taxpayers. It helps users understand taxpayer categories, registration paths, tax setup, filing preparation, deadline tracking, and a simplified filing flow inside the product.
+eTax is a tax guidance and compliance companion for Filipino taxpayers. It helps users understand taxpayer categories, registration paths, tax setup, filing preparation, deadline tracking, and filing status records inside the product.
 
-For this project, filing is mocked inside eTax. The product does not submit real government filings or payments. Instead, it lets users walk through a realistic preparation, review, submit, and payment-status workflow for demo and learning purposes.
+For this project, eTax focuses on guidance, preparation, deadlines, and status tracking. It does not submit real government filings or payments.
 
-The MVP is category-first. Users begin by selecting the taxpayer category closest to their situation, such as employee or compensation earner, self-employed professional, single proprietor, mixed-income earner, E.O. 98 or one-time transaction taxpayer, or non-individual taxpayer. The app then creates a guided workspace for profile confirmation, checklist preparation, deadlines, readiness, mocked filing, and filing status.
+The MVP is category-first. Users begin by selecting the taxpayer category closest to their situation, such as employee or compensation earner, self-employed professional, single proprietor, mixed-income earner, E.O. 98 or one-time transaction taxpayer, or non-individual taxpayer. The app then creates a guided workspace for profile confirmation, checklist preparation, deadlines, readiness, and filing status.
 
 ## Problem Statement
 
@@ -24,7 +24,7 @@ The product helps users answer three core questions:
 
 - Which taxpayer category fits my situation?
 - What do I need to do next?
-- Am I ready to complete a mocked filing flow?
+- What is still missing before I mark a filing item complete?
 
 The long-term vision is a taxpayer guidance layer for individuals and organizations that preserves a simple, citizen-centered experience. The MVP starts with category selection and a reusable compliance workspace so the product can support multiple taxpayer paths without changing its core model.
 
@@ -32,7 +32,7 @@ The long-term vision is a taxpayer guidance layer for individuals and organizati
 
 ### Business Goals
 
-- Establish eTax as a clear guidance and mocked filing workspace for Filipino taxpayers.
+- Establish eTax as a clear guidance and compliance status workspace for Filipino taxpayers.
 - Validate demand through category-first onboarding and recurring compliance support.
 - Build a scalable product foundation that can support individual and non-individual taxpayer journeys.
 
@@ -42,16 +42,15 @@ The long-term vision is a taxpayer guidance layer for individuals and organizati
 - Understand the correct first steps for tax compliance.
 - Know which documents, forms, and channels are needed.
 - Avoid missed deadlines and incomplete filing preparation.
-- Feel confident before completing the mocked filing flow.
+- Feel confident before updating filing and payment status.
 
 ### Success Metrics
 
 - Taxpayer category selection completion rate.
 - Profile setup completion rate.
-- Personalized roadmap completion rate.
 - Percentage of users who reach filing-ready status.
 - Reminder engagement rate.
-- Mock filing completion rate.
+- Filing tracker update rate.
 - User-reported clarity score after onboarding.
 
 ## Target Users
@@ -74,13 +73,13 @@ The long-term vision is a taxpayer guidance layer for individuals and organizati
 
 ## User Needs
 
-Users need to understand their taxpayer category, registration path, documentary requirements, and recurring filing responsibilities in plain language. They also need practical guidance that turns tax preparation into a sequence of actions with reminders, checklists, and mocked filing steps.
+Users need to understand their taxpayer category, registration path, documentary requirements, and recurring filing responsibilities in plain language. They also need practical guidance that turns tax preparation into a sequence of actions with reminders, checklists, and filing status records.
 
 ## Value Proposition
 
-eTax helps Filipinos understand what tax obligations may apply to them, prepare what they need, and complete a mocked filing workflow with less confusion.
+eTax helps Filipinos understand what tax obligations may apply to them, prepare what they need, and keep filing status records with less confusion.
 
-For the MVP, it serves as a practical compliance workspace from category selection through profile confirmation, document preparation, deadline awareness, filing readiness, mock submission, and status tracking.
+For the MVP, it serves as a practical compliance workspace from category selection through profile confirmation, document preparation, deadline awareness, filing readiness, and status tracking.
 
 ## Scope
 
@@ -91,11 +90,9 @@ For the MVP, it serves as a practical compliance workspace from category selecti
 - Category-aware guided journey.
 - Registration and setup checklist.
 - Document checklist.
-- Personalized tax roadmap.
 - Deadline calendar and reminders.
 - Pre-filing readiness check.
-- Filing and payment status tracker.
-- Mock filing flow.
+- Quarterly filing and payment status tracker with generated PDF previews.
 
 ### Out of Scope for MVP
 
@@ -112,11 +109,11 @@ For the MVP, it serves as a practical compliance workspace from category selecti
 
 Users first select the taxpayer category closest to their situation. Categories include employee or compensation earner, self-employed professional or freelancer, single proprietor, mixed-income earner, E.O. 98 or one-time transaction taxpayer, and non-individual taxpayer.
 
-This selection determines the starting profile language, recommended forms, checklist emphasis, and roadmap framing.
+This selection determines the starting profile language, recommended forms, and checklist emphasis.
 
 ### 2. Taxpayer Profile Setup
 
-Users complete or confirm a simple profile that identifies income type, work or entity arrangement, prior registration status, TIN status, RDO context, and likely taxpayer path. This profile powers reminders, checklists, and mocked filing steps.
+Users complete or confirm a simple profile that identifies income type, work or entity arrangement, prior registration status, TIN status, RDO context, and likely taxpayer path. This profile powers reminders, checklists, and filing status records.
 
 ### 3. Guided Registration Journey
 
@@ -124,33 +121,23 @@ The app provides a step-by-step setup flow for initial or updated compliance, in
 
 Each step should use plain language and indicate whether the action can be completed online or may require another channel or office process.
 
-### 4. Personalized Tax Roadmap
-
-After onboarding, users receive a visual roadmap showing what they need to do first, next, and later. This turns fragmented tax tasks into a guided sequence instead of forcing users to discover obligations on their own.
-
-### 5. Document and Form Checklist
+### 4. Document and Form Checklist
 
 Users receive a tailored checklist of common forms, information, and documentary requirements associated with their setup and filing journey. The checklist should support completion states and preparation status so users can see what is still missing.
 
-### 6. Deadline Calendar and Reminders
+### 5. Deadline Calendar and Reminders
 
 The app provides a calendar of relevant deadlines and upcoming compliance events. Reminder notifications should appear in-app and help users prepare before deadlines.
 
-### 7. Pre-Filing Readiness Checker
+### 6. Pre-Filing Readiness Checker
 
-Before users move to the mocked filing flow, the app reviews whether core details, documents, and preparation tasks have been completed.
+Before users update filing status, the app reviews whether core details, documents, and preparation tasks have been completed.
 
 This is not a legal validation engine. It is a checklist-based readiness layer that reduces preventable mistakes.
 
-### 8. Filing and Payment Tracker
+### 7. Filing and Payment Tracker
 
-Users can mark an obligation as draft, ready, filed, or paid. This creates continuity between preparation, mock submission, and payment-status tracking.
-
-### 9. Mock Filing Flow
-
-The app provides an in-product filing simulation for demo purposes. Users can review prepared details, confirm checklist readiness, submit a mock filing, and update payment status.
-
-Each mock filing step should clearly explain what the user is confirming and what status will change.
+Users can choose 1st Quarter through 4th Quarter filing options, preview generated income tax form PDFs populated with known profile data, download the generated PDF, and mark an obligation as draft, ready, filed, or paid. The first three quarters use Form 1701Q, while the fourth option represents annual filing with Form 1701A. This creates continuity between preparation and payment-status tracking.
 
 ## User Stories
 
@@ -164,7 +151,7 @@ Each mock filing step should clearly explain what the user is confirming and wha
 
 - As a user, I want a checklist of required documents and information so I can prepare before I file.
 - As a user, I want reminders about deadlines so I do not forget compliance dates.
-- As a user, I want to know whether I am filing-ready before I complete a mock submission.
+- As a user, I want to know whether I am filing-ready before I update a filing record.
 
 ### Ongoing Compliance
 
@@ -177,11 +164,11 @@ Each mock filing step should clearly explain what the user is confirming and wha
 
 1. User opens eTax and chooses a taxpayer category.
 2. User completes or confirms profile setup with work or entity type, income pattern, and registration status.
-3. App generates a personalized roadmap and first-step checklist.
+3. App generates a first-step checklist.
 4. User reviews required documents and setup tasks.
 5. User receives calendar deadlines and reminders.
 6. User completes a pre-filing readiness check.
-7. App guides the user through a mocked filing submission.
+7. User updates the filing and payment record under their tax profile.
 8. User returns to mark status as filed or paid where applicable.
 
 ## Functional Requirements
@@ -189,12 +176,11 @@ Each mock filing step should clearly explain what the user is confirming and wha
 | Area | Requirement |
 | --- | --- |
 | Onboarding | System must capture taxpayer category, work or entity type, and registration status. |
-| Personalization | System must generate a relevant roadmap based on onboarding answers. |
+| Personalization | System must generate relevant checklist and deadline defaults based on onboarding answers. |
 | Checklist | System must display task-level completion states for documents and setup steps. |
 | Reminders | System must show deadline reminders tied to the user journey. |
-| Readiness | System must surface missing items before mock filing submission. |
+| Readiness | System must surface missing items before filing status updates. |
 | Tracking | System must allow status tagging for obligations: draft, ready, filed, paid. |
-| Mock filing | System must let users review and submit a mocked filing flow inside the app. |
 | Expansion | System architecture should support additional taxpayer journeys and deeper segment-specific flows. |
 
 ## Non-Functional Requirements
@@ -203,13 +189,13 @@ Each mock filing step should clearly explain what the user is confirming and wha
 - Clear, plain-language content suitable for non-expert users.
 - Accessible navigation and readable checklist design.
 - Fast loading for common mobile connectivity conditions.
-- Reliable state handling during mock filing submission.
+- Reliable state handling during filing status updates.
 - Modular information architecture for future segment expansion.
 
 ## Assumptions
 
 - Users are willing to complete a guided setup if the benefit is immediate clarity.
-- Filing and payment actions are mocked for the project and do not create legal filings.
+- Filing and payment status updates are records only and do not create legal filings.
 - Initial value is driven more by guidance and readiness than by full filing automation.
 - Category-first onboarding can validate broader demand across multiple taxpayer segments.
 
@@ -228,17 +214,15 @@ Each mock filing step should clearly explain what the user is confirming and wha
 - Accurate content mapping for categories, registration, forms, and channels is maintained.
 - Notification and reminder logic is implemented consistently.
 
-## Roadmap
+## Product Phases
 
 ### MVP
 
 - Category-first onboarding.
 - Taxpayer profile setup.
-- Personalized roadmap.
 - Registration checklist.
 - Deadline reminders.
 - Readiness checker.
-- Mock filing flow.
 - Status tracking.
 
 ### Phase 2
@@ -260,9 +244,9 @@ Each mock filing step should clearly explain what the user is confirming and wha
 - Which taxpayer category should receive the deepest first workflow after the shared MVP?
 - Should reminders be purely in-app for MVP, or should they also support email or SMS later?
 - How much tax setup decision support should be included without becoming advisory?
-- Which mocked filing scenarios should be emphasized most in the first release?
+- Which filing status scenarios should be emphasized most in the first release?
 - What proof of value matters most for judges: category clarity, completion, or compliance readiness?
 
 ## Summary
 
-eTax is a broad tax guidance product with category-first onboarding and a reusable compliance workspace. It uses profile-based journeys, checklists, reminders, and mocked filing flows to make Filipino tax compliance easier to understand and demonstrate.
+eTax is a broad tax guidance product with category-first onboarding and a reusable compliance workspace. It uses profile-based journeys, checklists, reminders, and filing status records to make Filipino tax compliance easier to understand and demonstrate.

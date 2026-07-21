@@ -42,7 +42,7 @@ TypeScript is required across the codebase.
 Use TypeScript for:
 
 - Strongly typed user profiles.
-- Tax roadmap and checklist models.
+- Tax checklist and filing status models.
 - Filing status and deadline entities.
 - Supabase query responses.
 - Component props and shared UI contracts.
@@ -83,20 +83,20 @@ Use Supabase for:
 
 - User authentication.
 - Taxpayer profile storage.
-- Roadmap and checklist persistence.
+- Checklist and filing tracker persistence.
 - Deadline and reminder data.
 - Filing and payment status tracking.
 - Optional document metadata storage.
+
+Use `pdf-lib` in server route handlers to generate profile-populated PDF previews from static form assets.
 
 Recommended core tables:
 
 - `profiles`
 - `taxpayer_profiles`
-- `roadmap_steps`
 - `document_checklist_items`
 - `deadlines`
 - `filing_obligations`
-- `mock_filing_modules`
 
 Use Row Level Security for all user-owned data.
 
@@ -123,11 +123,9 @@ Supabase
 | --- | --- |
 | Onboarding | Next.js, TypeScript, Tailwind |
 | Taxpayer profile | Next.js, Supabase, TypeScript |
-| Compliance roadmap | Next.js, Supabase, Tailwind |
 | Document checklist | Next.js, Supabase, TypeScript |
 | Deadline calendar | Next.js, Supabase |
-| Filing tracker | Next.js, Supabase |
-| Mock filing flow | Next.js, Supabase |
+| Filing tracker | Next.js, Supabase, pdf-lib |
 | Authentication | Supabase Auth |
 
 ## Development Standards

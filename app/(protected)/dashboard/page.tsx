@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowUpRight,
   CalendarClock,
   FileWarning,
   ShieldCheck,
@@ -35,12 +34,12 @@ export default async function DashboardPage() {
             Compliance dashboard
           </h1>
           <p className="mt-2 max-w-2xl text-grey-600">
-            Track what is ready, what is missing, and when to continue into the
-            mock filing flow.
+            Track what is ready, what is missing, and what still needs attention
+            before filing.
           </p>
         </div>
-        <Link className={buttonClass("primary")} href="/roadmap">
-          Review roadmap <ArrowUpRight size={18} aria-hidden />
+        <Link className={buttonClass("primary")} href="/documents">
+          Review checklist
         </Link>
       </div>
 
@@ -82,26 +81,28 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-extrabold text-grey-900">
-                Compliance roadmap
+                Preparation checklist
               </h2>
               <p className="mt-1 text-sm text-grey-600">
-                Your next steps before mock filing.
+                The most important items to complete before filing.
               </p>
             </div>
-            <Link className="text-sm font-bold text-primary-700" href="/roadmap">
+            <Link className="text-sm font-bold text-primary-700" href="/documents">
               View all
             </Link>
           </div>
           <div className="mt-6 space-y-4">
-            {data.roadmapSteps.slice(0, 4).map((step) => (
-              <div className="flex gap-4 rounded-xl bg-grey-100 p-4" key={step.id}>
+            {data.checklistItems.slice(0, 4).map((item) => (
+              <div className="flex gap-4 rounded-xl bg-grey-100 p-4" key={item.id}>
                 <div className="mt-1 h-3 w-3 rounded-full bg-primary-500" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-bold text-grey-900">{step.title}</h3>
-                    <StatusBadge status={step.status} />
+                    <h3 className="font-bold text-grey-900">{item.title}</h3>
+                    <StatusBadge status={item.status} />
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-grey-600">{step.description}</p>
+                  <p className="mt-1 text-sm leading-6 text-grey-600">
+                    {item.description}
+                  </p>
                 </div>
               </div>
             ))}

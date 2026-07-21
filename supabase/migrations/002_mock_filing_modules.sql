@@ -71,30 +71,35 @@ on conflict (key) do update set
   url = excluded.url,
   external = excluded.external;
 
-update public.roadmap_steps
-set handoff_key = case handoff_key
-  when 'orus' then 'profile-review'
-  when 'bir-eservices' then 'readiness-check'
-  when 'efps' then 'mock-submit'
-  else handoff_key
-end
-where handoff_key in ('orus', 'bir-eservices', 'efps');
+do $$
+begin
+  if to_regclass('public.roadmap_steps') is not null then
+    update public.roadmap_steps
+    set handoff_key = case handoff_key
+      when 'orus' then 'profile-review'
+      when 'bir-eservices' then 'readiness-check'
+      when 'efps' then 'mock-submit'
+      else handoff_key
+    end
+    where handoff_key in ('orus', 'bir-eservices', 'efps');
 
-update public.roadmap_steps
-set
-  title = case title
-    when 'File through the official channel' then 'Complete mock filing'
-    else title
-  end,
-  description = case
-    when description like '%official BIR channel%' then
-      'Check whether required documents and status fields are complete before starting a mock filing.'
-    when description like '%BIR filing service%' then
-      'Review the simulated filing details and submit the mock return inside eTax.'
-    when description like '%official transaction%' then
-      'Update your mock filing and payment status so the compliance tracker stays current.'
-    else description
-  end;
+    update public.roadmap_steps
+    set
+      title = case title
+        when 'File through the official channel' then 'Complete mock filing'
+        else title
+      end,
+      description = case
+        when description like '%official BIR channel%' then
+          'Check whether required documents and status fields are complete before starting a mock filing.'
+        when description like '%BIR filing service%' then
+          'Review the simulated filing details and submit the mock return inside eTax.'
+        when description like '%official transaction%' then
+          'Update your mock filing and payment status so the compliance tracker stays current.'
+        else description
+      end;
+  end if;
+end $$;
 
 update public.deadlines
 set channel = case

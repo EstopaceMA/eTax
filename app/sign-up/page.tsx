@@ -20,7 +20,7 @@ export default async function SignUpPage({
         </h1>
         <p className="mt-2 text-sm leading-6 text-grey-600">
           First, choose the taxpayer category closest to your situation. This
-          sets the starting profile for your checklist and mock filing flow.
+          sets the starting profile for your checklist and filing tracker.
         </p>
         {params.error ? (
           <p className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm font-semibold text-red-800">
