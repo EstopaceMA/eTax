@@ -29,13 +29,11 @@ function CheckoutButton({
 }
 
 export function EgovPayCheckoutForm({
-  fileBeforePay = false,
   label = "Proceed",
   pendingLabel = "Opening eGovPay...",
   quarter,
   variant = "primary",
 }: {
-  fileBeforePay?: boolean;
   label?: string;
   pendingLabel?: string;
   quarter: number;
@@ -44,9 +42,6 @@ export function EgovPayCheckoutForm({
   return (
     <form action={createEgovPayCheckout} className="grid">
       <input name="quarter" type="hidden" value={quarter} />
-      {fileBeforePay ? (
-        <input name="file_before_pay" type="hidden" value="1" />
-      ) : null}
       <CheckoutButton label={label} pendingLabel={pendingLabel} variant={variant} />
     </form>
   );

@@ -8,6 +8,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
+import { NextAction } from "@/components/next-action";
+import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
 import { daysUntil, formatDate, readinessPercentage } from "@/lib/utils";
 
@@ -27,6 +29,7 @@ function deadlineDistance(date: string) {
 
 export default async function DashboardPage() {
   const data = await getWorkspaceData();
+  const plan = await getAgenticPlan();
   const requiredItems = data.checklistItems.filter((item) => item.required);
   const completedRequired = requiredItems.filter(
     (item) => item.status === "complete",
@@ -46,6 +49,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      <NextAction plan={plan} />
       <div className="flex flex-col justify-between gap-4 rounded-lg border border-grey-300 bg-grey-50 p-4 shadow-[0_10px_28px_rgba(20,26,33,0.05)] md:flex-row md:items-end md:p-5">
         <div>
           <p className="text-xs font-bold uppercase text-primary-700">
@@ -59,7 +63,7 @@ export default async function DashboardPage() {
             before filing.
           </p>
         </div>
-        <Link className={`${buttonClass("primary")} w-full md:w-auto`} href="/filing?view=documents">
+        <Link className={`${buttonClass("secondary")} w-full md:w-auto`} href="/filing?quarter=2&view=records">
           Upload income records
         </Link>
       </div>
@@ -116,7 +120,7 @@ export default async function DashboardPage() {
                 Uploaded images and saved totals for the active filing period.
               </p>
             </div>
-            <Link className="text-sm font-bold text-primary-700" href="/filing?view=documents">
+            <Link className="text-sm font-bold text-primary-700" href="/filing?quarter=2&view=records">
               Manage
             </Link>
           </div>

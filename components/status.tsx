@@ -1,15 +1,25 @@
 import { Badge } from "@/components/ui/badge";
 
 export function statusTone(status: string) {
-  if (["complete", "filed", "paid"].includes(status)) {
+  if (["complete", "confirmed", "filed", "paid", "verified"].includes(status)) {
     return "success" as const;
   }
 
-  if (["ready", "upcoming"].includes(status)) {
+  if (["ready", "ready_for_review", "upcoming"].includes(status)) {
     return "primary" as const;
   }
 
-  if (["due_soon", "missing", "unpaid"].includes(status)) {
+  if (
+    [
+      "approval_required",
+      "due_soon",
+      "missing",
+      "needs_review",
+      "pending_verification",
+      "provisional",
+      "unpaid",
+    ].includes(status)
+  ) {
     return "warning" as const;
   }
 

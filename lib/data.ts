@@ -168,6 +168,11 @@ async function getStorageIncomeRecordUploads(userId: string): Promise<IncomeReco
                 : null,
             total_income:
               typeof metadata.total_income === "number" ? metadata.total_income : null,
+            extraction_status: "provisional",
+            extraction_confidence:
+              typeof metadata.total_income === "number" ? 0.75 : null,
+            extracted_text: null,
+            confirmed_at: null,
             created_at: file.created_at ?? file.updated_at ?? new Date().toISOString(),
             signed_url: signedResult.data?.signedUrl,
           } satisfies IncomeRecordUpload;
@@ -237,6 +242,10 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
 
       return {
         ...upload,
+            extraction_status: upload.extraction_status ?? "provisional",
+            extraction_confidence: upload.extraction_confidence ?? null,
+            extracted_text: upload.extracted_text ?? null,
+            confirmed_at: upload.confirmed_at ?? null,
             total_income:
               upload.total_income ??
               (typeof metadata.total_income === "number" ? metadata.total_income : null),

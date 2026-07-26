@@ -1,13 +1,35 @@
+import Image from "next/image";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardCheck,
+  CreditCard,
+  Download,
+  FileCheck2,
+  FileText,
+  ShieldCheck,
+} from "lucide-react";
+import {
+  AgentPlanSummary,
+  ApproveHandoffForm,
+  ConfirmComputationForm,
+  ConfirmIncomeRecordForm,
+  FilingAcknowledgementForm,
+  JourneyProgress,
+  PaymentProofForm,
+} from "@/components/agentic-workflow";
+import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import {
   DeleteIncomeRecordForm,
   IncomeRecordTotalForm,
   IncomeRecordUploadForm,
 } from "@/components/income-record-forms";
-import { Card } from "@/components/ui/card";
-import { buttonClass } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status";
-import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
-import { FileTaxReturnForm } from "@/components/file-tax-return-form";
+import { buttonClass } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
 import {
   filingQuarters,
@@ -15,28 +37,31 @@ import {
   isFilingPeriodOpen,
   parseFilingQuarter,
 } from "@/lib/filing-periods";
-import { getTaxAmountPayable } from "@/lib/tax-amount-payable";
 import { formatDate } from "@/lib/utils";
-import {
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
-  CreditCard,
-  Download,
-  FileText,
-  ShieldCheck,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
 
-type FilingView = "documents" | "bir-form" | "payment";
+type FilingView = "records" | "review" | "handoff" | "payment";
 
 function parseFilingView(value: string | undefined): FilingView {
-  if (value === "documents" || value === "payment") {
+  if (value === "documents") {
+    return "records";
+  }
+
+  if (value === "bir-form") {
+    return "review";
+  }
+
+  if (value === "records" || value === "handoff" || value === "payment") {
     return value;
   }
 
-  return "bir-form";
+  return "review";
+}
+
+function money(value: number) {
+  return new Intl.NumberFormat("en-PH", {
+    currency: "PHP",
+    style: "currency",
+  }).format(value);
 }
 
 function formatUploadDate(date: string) {
@@ -47,254 +72,223 @@ function formatUploadDate(date: string) {
   }).format(new Date(date));
 }
 
+const notices: Record<string, string> = {
+  "record-confirmed": "The extracted value is confirmed and available to the computation agent.",
+  "review-confirmed": "Your review is saved. The exact filing hand-off is ready for approval.",
+  "handoff-approved": "The hand-off was approved. Add the official-channel acknowledgement after filing.",
+  "acknowledgement-recorded": "Filing acknowledgement saved. Payment now requires separate approval.",
+  "payment-verified": "Payment proof saved. The controlled Q2 journey is complete.",
+  "record-locked": "This record is part of a handed-off return. The change was blocked and an exception was opened.",
+};
+
 export default async function FilingPage({
   searchParams,
 }: {
   searchParams?: Promise<{
-    filing?: string;
-    flow?: string;
+    notice?: string;
     payment?: string;
     quarter?: string;
-    sms?: string;
     view?: string;
   }>;
 }) {
   const params = await searchParams;
+  const data = await getWorkspaceData();
   const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
-  const requestedQuarterMeta =
-    filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ?? filingQuarters[0];
-  const selectedQuarter = isFilingPeriodOpen(requestedQuarterMeta.opensOn)
+  const requestedMeta =
+    filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ?? filingQuarters[1];
+  const selectedQuarter = isFilingPeriodOpen(requestedMeta.opensOn)
     ? requestedQuarter
     : getLatestOpenQuarter();
+  const selectedMeta =
+    filingQuarters.find(({ quarter }) => quarter === selectedQuarter) ?? filingQuarters[1];
   const selectedView = parseFilingView(params?.view);
-  const selectedQuarterMeta =
-    filingQuarters.find(({ quarter }) => quarter === selectedQuarter) ?? filingQuarters[0];
-  const { filingObligations, incomeRecordUploads } = await getWorkspaceData();
-  const quarterlyObligations = filingQuarters.map((quarter) => ({
+  const plan = await getAgenticPlan();
+  const obligations = filingQuarters.map((quarter) => ({
     ...quarter,
-    obligation: filingObligations.find(({ period }) =>
+    obligation: data.filingObligations.find(({ period }) =>
       [quarter.period, ...(quarter.periodAliases ?? [])].includes(period),
     ),
   }));
-  const selectedObligation = quarterlyObligations.find(
+  const selectedObligation = obligations.find(
     ({ quarter }) => quarter === selectedQuarter,
   )?.obligation;
-  const pdfPreviewUrl = `/api/filing/pdf?quarter=${selectedQuarter}`;
-  const pdfPreviewFitUrl = `${pdfPreviewUrl}#zoom=page-width&pagemode=none`;
-  const pdfDownloadUrl = `${pdfPreviewUrl}&download=1`;
-  const selectedIncomeRecords = incomeRecordUploads.filter((upload) =>
-    [selectedQuarterMeta.period, ...(selectedQuarterMeta.periodAliases ?? [])].includes(
-      upload.period,
-    ),
+  const selectedRecords = data.incomeRecordUploads.filter((record) =>
+    [selectedMeta.period, ...(selectedMeta.periodAliases ?? [])].includes(record.period),
   );
-  const totalIncomeRecorded = selectedIncomeRecords.reduce(
-    (sum, record) => sum + Number(record.total_income ?? 0),
-    0,
-  );
-  const formattedTotalIncome = new Intl.NumberFormat("en-PH", {
-    currency: "PHP",
-    style: "currency",
-  }).format(totalIncomeRecorded);
-  const formattedTaxAmountPayable = new Intl.NumberFormat("en-PH", {
-    currency: "PHP",
-    style: "currency",
-  }).format(getTaxAmountPayable());
-  const paymentSucceeded =
-    params?.payment === "success" || params?.payment === "returned";
-  const fileBeforePay = params?.flow === "file-and-pay";
-  const filingNotice =
-    params?.filing === "filed"
-      ? params?.sms === "sent"
-        ? "eTax filed this return and queued an SMS confirmation."
-        : "eTax filed this return. SMS confirmation was not queued."
-      : params?.filing === "already-filed"
-        ? "This return is already marked filed."
-        : params?.filing === "missing"
-          ? "This filing record could not be found."
-          : null;
-  const selectedViewLabel =
-    selectedView === "documents"
-      ? "Documents"
-      : selectedView === "payment"
-        ? "Payment review"
-        : "BIR Form";
+  const isPilotQuarter = selectedQuarter === 2;
+  const pdfUrl = `/api/filing/pdf?quarter=${selectedQuarter}`;
+  const notice = params?.notice ? notices[params.notice] : null;
+  const paymentReturned = params?.payment === "proof-required";
+  const activeTask = plan.task.task_type;
+
+  const views = [
+    { key: "records", label: "Records", icon: ClipboardCheck },
+    { key: "review", label: "Review", icon: FileCheck2 },
+    { key: "handoff", label: "Hand-off", icon: ShieldCheck },
+    { key: "payment", label: "Payment", icon: CreditCard },
+  ] satisfies Array<{ key: FilingView; label: string; icon: typeof ClipboardCheck }>;
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-lg border border-grey-300 bg-grey-50 p-4 shadow-[0_10px_28px_rgba(20,26,33,0.05)] md:p-5">
-        <p className="text-xs font-bold uppercase text-primary-700">Filing tracker</p>
-        <h1 className="mt-2 text-3xl font-black leading-tight text-grey-900 md:text-4xl">
+    <div className="space-y-4">
+      <header className="border-b border-grey-300 pb-4">
+        <p className="text-xs font-bold uppercase text-primary-700">Controlled filing pilot</p>
+        <h1 className="mt-1 text-2xl font-black leading-tight text-grey-900 md:text-3xl">
           Quarterly filing workspace
         </h1>
-        <p className="mt-2 max-w-2xl text-grey-600">
-          Choose a quarter, review the supporting documents, then open the
-          generated tax form preview populated from your profile.
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-grey-600">
+          Agents prepare each step. You verify the evidence and approve material actions.
         </p>
+      </header>
+
+      <div className="scrollbar-hidden overflow-x-auto overscroll-x-contain px-3 py-1 [scroll-padding-inline:12px] md:px-0">
+        <div className="grid min-w-[680px] grid-cols-4 gap-2">
+          {obligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
+            const selected = quarter === selectedQuarter;
+            const open = isFilingPeriodOpen(opensOn);
+
+            return open ? (
+              <Link
+                className={[
+                  "flex min-h-16 items-center justify-between gap-2 rounded-lg border px-3 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
+                  selected
+                    ? "border-primary-500 bg-primary-500 text-white shadow-[0_6px_14px_rgba(7,92,247,0.18)]"
+                    : "border-grey-300 bg-white text-grey-700 hover:border-primary-300",
+                ].join(" ")}
+                href={`/filing?quarter=${quarter}&view=${selectedView}`}
+                key={quarter}
+              >
+                <span>
+                  <span className="block text-sm font-extrabold">{label}</span>
+                  <span
+                    className={`mt-1 block text-xs font-bold ${
+                      selected ? "text-primary-50" : "text-grey-500"
+                    }`}
+                  >
+                    Due {formatDate(obligation?.due_date ?? dueDate)}
+                  </span>
+                </span>
+                <CalendarDays aria-hidden size={18} />
+              </Link>
+            ) : (
+              <div
+                aria-disabled="true"
+                className="flex min-h-16 items-center justify-between rounded-lg border border-grey-200 bg-grey-50 px-3 text-grey-400"
+                key={quarter}
+              >
+                <span>
+                  <span className="block text-sm font-extrabold">{label}</span>
+                  <span className="mt-1 block text-xs font-bold">
+                    Opens {formatDate(opensOn)}
+                  </span>
+                </span>
+                <CalendarDays aria-hidden size={18} />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="scrollbar-hidden overflow-x-auto overscroll-x-contain rounded-lg px-3 py-2 [scroll-padding-inline:12px] md:px-0">
-          <div className="grid min-w-[720px] grid-cols-4 gap-3 rounded-lg border border-grey-300 bg-grey-50 p-2 shadow-[0_8px_22px_rgba(20,26,33,0.05)] md:min-w-0">
-            {quarterlyObligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
-              const isSelected = quarter === selectedQuarter;
-              const isOpen = isFilingPeriodOpen(opensOn);
-
-              return isOpen ? (
-                <Link
-                  className={[
-                    "flex min-h-16 items-center justify-between gap-3 rounded-md px-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
-                    isSelected
-                      ? "bg-primary-500 text-white shadow-[0_8px_16px_rgba(7,92,247,0.2)]"
-                      : "text-grey-700 hover:bg-primary-50 hover:text-primary-900",
-                  ].join(" ")}
-                  href={`/filing?quarter=${quarter}&view=${selectedView}`}
-                  key={quarter}
-                >
-                  <span>
-                    <span className="block text-sm font-extrabold">{label}</span>
-                    <span
-                      className={[
-                        "mt-1 block text-xs font-bold",
-                        isSelected ? "text-primary-50" : "text-grey-500",
-                      ].join(" ")}
-                    >
-                      Due {formatDate(obligation?.due_date ?? dueDate)}
-                    </span>
-                  </span>
-                  <CalendarDays aria-hidden size={18} />
-                </Link>
-              ) : (
-                <div
-                  aria-disabled="true"
-                  className="flex min-h-16 cursor-not-allowed items-center justify-between gap-3 rounded-md px-4 text-left text-grey-400"
-                  key={quarter}
-                >
-                  <span>
-                    <span className="block text-sm font-extrabold">{label}</span>
-                    <span className="mt-1 block text-xs font-bold">
-                      Opens {formatDate(opensOn)}
-                    </span>
-                  </span>
-                  <CalendarDays aria-hidden size={18} />
-                </div>
-              );
-            })}
-          </div>
+      {isPilotQuarter ? (
+        <>
+          <JourneyProgress tasks={plan.tasks} />
+          <AgentPlanSummary plan={plan} />
+        </>
+      ) : (
+        <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4 text-sm text-grey-700">
+          <AlertTriangle aria-hidden className="mt-0.5 shrink-0 text-warning-500" size={18} />
+          The controlled agentic pilot is available for the 2nd Quarter workspace.
         </div>
+      )}
 
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-          {[
-            {
-              href: `/filing?quarter=${selectedQuarter}&view=documents`,
-              icon: ClipboardCheck,
-              label: "Documents",
-              selected: selectedView === "documents",
-            },
-            {
-              href: `/filing?quarter=${selectedQuarter}&view=bir-form`,
-              icon: FileText,
-              label: "BIR Form",
-              selected: selectedView === "bir-form",
-            },
-          ].map((item) => (
+      {notice ? (
+        <p className="flex items-start gap-2 border border-success-500/25 bg-success-500/10 p-3 text-sm font-semibold text-grey-800">
+          <CheckCircle2 aria-hidden className="mt-0.5 shrink-0 text-success-500" size={17} />
+          {notice}
+        </p>
+      ) : null}
+
+      <nav
+        aria-label="Filing workspace views"
+        className="grid grid-cols-4 overflow-hidden rounded-lg border border-grey-300 bg-grey-100 p-1"
+      >
+        {views.map((item) => {
+          const selected = item.key === selectedView;
+
+          return (
             <Link
+              aria-current={selected ? "page" : undefined}
               className={[
-                "inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
-                item.selected
-                  ? "border-primary-500 bg-primary-50 text-primary-900"
-                  : "border-grey-300 bg-white text-grey-700 hover:border-primary-300 hover:text-primary-700",
+                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:flex-row sm:text-sm",
+                selected
+                  ? "bg-white text-primary-700 shadow-sm"
+                  : "text-grey-500 hover:text-grey-900",
               ].join(" ")}
-              href={item.href}
-              key={item.label}
+              href={`/filing?quarter=${selectedQuarter}&view=${item.key}`}
+              key={item.key}
             >
-              <item.icon size={16} aria-hidden />
-              {item.label}
+              <item.icon aria-hidden size={17} />
+              <span className="truncate">{item.label}</span>
             </Link>
-          ))}
-        </div>
-      </div>
+          );
+        })}
+      </nav>
 
-      <Card className="space-y-5">
-        <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+      {selectedView === "records" ? (
+        <Card className="space-y-4">
           <div>
-            <p className="text-sm font-bold text-primary-700">
-              {selectedViewLabel}
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-grey-900">
-              {selectedView === "documents"
-                ? "Income records"
-                : selectedView === "payment"
-                  ? paymentSucceeded
-                    ? "Payment complete"
-                    : "Payment receipt preview"
-                  : `BIR Form ${selectedQuarterMeta.formCode}`}
-            </h2>
-            <p className="mt-2 text-sm text-grey-600">
-              {selectedView === "documents"
-                ? "Uploaded invoice and income record files attached to this filing period."
-                : selectedView === "payment"
-                  ? paymentSucceeded
-                    ? "Your eGovPay test payment details are shown below."
-                    : "Review the filing summary before continuing to payment."
-                  : "Review the official form preview before choosing a filing action."}
+            <p className="text-xs font-bold uppercase text-primary-700">Evidence</p>
+            <h2 className="mt-1 text-xl font-extrabold text-grey-900">Income records</h2>
+            <p className="mt-1 text-sm leading-6 text-grey-600">
+              Extracted values remain provisional until you confirm them.
             </p>
           </div>
-          {selectedView === "bir-form" ? (
-            <a className={`${buttonClass("secondary")} w-full lg:w-auto`} href={pdfDownloadUrl}>
-              <Download size={18} aria-hidden />
-              Download PDF
-            </a>
-          ) : null}
-        </div>
-
-        {selectedView === "documents" ? (
+          <IncomeRecordUploadForm
+            existingFilenames={selectedRecords.map(({ original_filename }) => original_filename)}
+            quarter={selectedQuarter}
+          />
           <div className="space-y-3">
-            <IncomeRecordUploadForm
-              existingFilenames={selectedIncomeRecords.map(
-                (record) => record.original_filename,
-              )}
-              quarter={selectedQuarter}
-            />
-
-            {selectedIncomeRecords.length > 0 ? (
-              selectedIncomeRecords.map((record) => (
-                <div
-                  className="grid gap-4 rounded-lg border border-grey-300 bg-grey-100 p-3 lg:grid-cols-[112px_minmax(0,1fr)_minmax(300px,340px)] lg:items-center"
-                  key={record.id}
-                >
-                  <div className="overflow-hidden rounded-lg bg-white">
-                    {record.signed_url && record.content_type?.startsWith("image/") ? (
-                      <div
-                        aria-label={record.original_filename}
-                        className="aspect-[4/3] w-full bg-cover bg-center"
-                        role="img"
-                        style={{ backgroundImage: `url(${record.signed_url})` }}
-                      />
-                    ) : (
-                      <div className="flex aspect-[4/3] items-center justify-center bg-primary-50 text-primary-900">
-                        <FileText aria-hidden size={28} />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase text-grey-500">
-                      Income records
-                    </p>
-                    <h3 className="mt-1 break-all font-extrabold text-grey-900">
-                      {record.original_filename}
-                    </h3>
-                    <p className="mt-1 text-sm text-grey-600">
-                      Uploaded {formatUploadDate(record.created_at)} · {record.period}
-                    </p>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]">
-                    <IncomeRecordTotalForm
-                      id={record.id}
-                      quarter={selectedQuarter}
-                      storagePath={record.storage_path}
-                      totalIncome={record.total_income}
+            {selectedRecords.map((record) => (
+              <article
+                className="grid gap-4 rounded-lg border border-grey-300 bg-grey-50 p-3 lg:grid-cols-[104px_1fr_260px] lg:items-start"
+                key={record.id}
+              >
+                <div className="overflow-hidden rounded-lg border border-grey-300 bg-white">
+                  {record.signed_url && record.content_type?.startsWith("image/") ? (
+                    <div
+                      aria-label={record.original_filename}
+                      className="aspect-[4/3] bg-cover bg-center"
+                      role="img"
+                      style={{ backgroundImage: `url(${record.signed_url})` }}
                     />
-                    <div className="w-full">
+                  ) : (
+                    <div className="grid aspect-[4/3] place-items-center text-primary-700">
+                      <FileText aria-hidden size={26} />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={record.extraction_status} />
+                    {record.extraction_confidence ? (
+                      <span className="text-xs font-bold text-grey-500">
+                        {Math.round(record.extraction_confidence * 100)}% confidence
+                      </span>
+                    ) : null}
+                  </div>
+                  <h3 className="mt-2 break-all font-extrabold text-grey-900">
+                    {record.original_filename}
+                  </h3>
+                  <p className="mt-1 text-sm text-grey-600">
+                    Uploaded {formatUploadDate(record.created_at)}
+                  </p>
+                  {record.extraction_status === "confirmed" ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <IncomeRecordTotalForm
+                        id={record.id}
+                        quarter={selectedQuarter}
+                        storagePath={record.storage_path}
+                        totalIncome={record.total_income}
+                      />
                       <DeleteIncomeRecordForm
                         filename={record.original_filename}
                         id={record.id}
@@ -302,209 +296,252 @@ export default async function FilingPage({
                         storagePath={record.storage_path}
                       />
                     </div>
-                  </div>
+                  ) : null}
                 </div>
-              ))
-            ) : (
-              <div className="rounded-lg border border-dashed border-grey-300 bg-grey-100 p-5 text-sm font-semibold text-grey-600">
-                No income record images uploaded for this period yet.
+                {record.extraction_status === "confirmed" ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-success-500/10 p-3 text-sm font-bold text-grey-800">
+                    <CheckCircle2 aria-hidden className="text-success-500" size={19} />
+                    Verified evidence
+                  </div>
+                ) : (
+                  <ConfirmIncomeRecordForm record={record} />
+                )}
+              </article>
+            ))}
+            {selectedRecords.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-sm font-semibold text-grey-600">
+                No income records yet. Add at least one file to start the agentic review.
               </div>
-            )}
+            ) : null}
           </div>
-        ) : selectedView === "payment" ? (
-          <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-            <div className="rounded-lg border border-grey-300 bg-white p-4 md:p-5">
-              <div className="flex items-start justify-between gap-4 border-b border-grey-300 pb-5">
-                <div>
-                  <p className="text-xs font-bold uppercase text-grey-500">
-                    {paymentSucceeded ? "Payment confirmation" : "Pre-payment receipt"}
-                  </p>
-                  <h3 className="mt-2 text-2xl font-extrabold text-grey-900">
-                    {paymentSucceeded
-                      ? "Payment successful"
-                      : `${selectedQuarterMeta.label} filing review`}
-                  </h3>
-                  <p className="mt-1 text-sm text-grey-600">
-                    {paymentSucceeded
-                      ? "Your test payment was completed through eGovPay."
-                      : "Review your filing details before continuing to payment."}
-                  </p>
-                </div>
-                {paymentSucceeded ? (
-                  <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-success-500/10 text-success-500">
-                    <CheckCircle2 aria-hidden size={28} strokeWidth={2.5} />
-                  </div>
-                ) : null}
+        </Card>
+      ) : null}
+
+      {selectedView === "review" ? (
+        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+          <Card className="space-y-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase text-primary-700">
+                  Demo computation
+                </p>
+                <h2 className="mt-1 text-xl font-extrabold text-grey-900">
+                  Q2 return review
+                </h2>
               </div>
-
-              <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-                {[
-                  ["Filing period", selectedQuarterMeta.period],
-                  ["Form", `BIR Form ${selectedQuarterMeta.formCode}`],
-                  [
-                    "Due date",
-                    formatDate(selectedObligation?.due_date ?? selectedQuarterMeta.dueDate),
-                  ],
-                  ["Income records", `${selectedIncomeRecords.length} uploaded`],
-                  ["Recorded income", formattedTotalIncome],
-                  ["Tax amount payable", formattedTaxAmountPayable],
-                ].map(([label, value]) => (
-                  <div className="rounded-lg border border-grey-300 bg-grey-100 p-4" key={label}>
-                    <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                    <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-
+              <span className="rounded-full bg-warning-500/10 px-3 py-1 text-xs font-bold text-grey-800">
+                Not official tax advice
+              </span>
             </div>
-
-            {paymentSucceeded ? (
-              <aside className="rounded-lg border border-success-500/20 bg-white p-5">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-500/10 text-success-500">
-                    <CheckCircle2 aria-hidden size={22} strokeWidth={2.5} />
-                  </div>
-                  <h3 className="text-lg font-extrabold text-grey-900">
-                    Payment complete
-                  </h3>
-                </div>
-                <div className="mt-5">
-                  <p className="text-sm font-semibold text-grey-600">Amount paid</p>
-                  <p className="mt-1 text-3xl font-extrabold text-grey-900">
-                    {formattedTaxAmountPayable}
-                  </p>
-                  <div className="mt-5 flex items-start gap-2 border-t border-grey-300 pt-4 text-sm text-grey-600">
-                    <ShieldCheck
-                      aria-hidden
-                      className="mt-0.5 shrink-0 text-success-500"
-                      size={18}
-                    />
-                    <p>This test transaction was processed by eGovPay.</p>
-                  </div>
-                  <Link
-                    className={`${buttonClass("primary")} mt-5 w-full`}
-                    href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
-                  >
-                    <FileText size={18} aria-hidden />
-                    Return to filing
-                  </Link>
-                </div>
-              </aside>
-            ) : (
-              <aside className="overflow-hidden rounded-lg border border-primary-500/20 bg-white shadow-[0_16px_40px_rgba(7,92,247,0.08)]">
-                <div className="border-b border-primary-500/15 bg-primary-50 p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs font-bold uppercase text-primary-700">
-                      Secure payment handoff
-                    </p>
-                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary-500/20 bg-white px-2.5 py-1 text-xs font-bold text-primary-700">
-                      <ShieldCheck aria-hidden size={13} />
-                      Test mode
+            {plan.computation && plan.draft ? (
+              <>
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    ["Period", plan.computation.input_snapshot.period],
+                    ["Form", "BIR Form 1701Q"],
+                    ["Confirmed records", String(plan.computation.input_snapshot.recordIds.length)],
+                    ["Recorded income", money(plan.computation.input_snapshot.totalIncome)],
+                    ["Amount payable", money(plan.computation.output_snapshot.amountPayable)],
+                    ["Rule version", plan.rule.version],
+                  ].map(([label, value]) => (
+                    <div className="border-b border-grey-300 pb-3" key={label}>
+                      <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
+                      <dd className="mt-1 font-extrabold text-grey-900">{value}</dd>
                     </div>
-                  </div>
-                  <h3 className="mt-4 flex flex-wrap items-center gap-2 text-lg font-extrabold text-grey-900">
-                    <span>Pay with</span>
-                    <Image
-                      alt="eGovPay"
-                      className="h-auto w-[124px]"
-                      height={31}
-                      priority
-                      src="/egovpay-logo.webp"
-                      width={124}
-                    />
-                  </h3>
+                  ))}
+                </dl>
+                <div>
+                  <h3 className="text-sm font-extrabold text-grey-900">Computation trace</h3>
+                  <ol className="mt-3 space-y-2">
+                    {plan.computation.trace.map((item) => (
+                      <li
+                        className="flex items-center justify-between gap-3 border-b border-grey-200 pb-2 text-sm"
+                        key={item.label}
+                      >
+                        <span className="text-grey-600">{item.label}</span>
+                        <span className="text-right font-bold text-grey-900">
+                          {typeof item.value === "number" && item.label.includes("income")
+                            ? money(item.value)
+                            : item.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
-                <div className="p-5">
-                  <p className="text-sm text-grey-600">
-                    {fileBeforePay
-                      ? "eTax will file this return for you before opening the hosted eGovPay test gateway."
-                      : "Continue to the hosted eGovPay test gateway to pay your tax amount."}
-                  </p>
-                  <div className="mt-4 rounded-lg border border-grey-300 bg-grey-100 p-4">
-                    <p className="text-xs font-bold uppercase text-grey-500">
-                      Amount to pay
+                <div className="border-l-4 border-warning-500 bg-warning-500/10 px-4 py-3">
+                  <p className="text-sm font-extrabold text-grey-900">Material assumptions</p>
+                  {plan.computation.assumptions.map((assumption) => (
+                    <p className="mt-1 text-sm leading-6 text-grey-700" key={assumption}>
+                      {assumption}
                     </p>
-                    <p className="mt-1 text-2xl font-extrabold text-grey-900">
-                      {formattedTaxAmountPayable}
-                    </p>
-                  </div>
-                  {params?.payment === "unavailable" ? (
-                    <p className="mt-4 rounded-lg bg-error-500/10 p-3 text-sm font-semibold text-error-500">
-                      eGovPay could not create the payment link. Try again in a moment.
-                    </p>
-                  ) : null}
-                  {params?.payment === "already-paid" ? (
-                    <p className="mt-4 rounded-lg bg-primary-50 p-3 text-sm font-semibold text-primary-900">
-                      This filing is already marked as paid.
-                    </p>
-                  ) : null}
-                  <div className="mt-5 grid gap-2">
-                    <EgovPayCheckoutForm
-                      fileBeforePay={fileBeforePay}
-                      pendingLabel={
-                        fileBeforePay
-                          ? "Filing then opening eGovPay..."
-                          : "Opening eGovPay..."
-                      }
-                      quarter={selectedQuarter}
-                    />
-                    <Link
-                      className={buttonClass("secondary")}
-                      href={`/filing?quarter=${selectedQuarter}&view=bir-form`}
-                    >
-                      <FileText size={18} aria-hidden />
-                      Back to BIR Form
-                    </Link>
-                  </div>
-                  <div className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-grey-500">
-                    <ShieldCheck aria-hidden size={14} />
-                    Test mode · No live funds are moved
-                  </div>
+                  ))}
                 </div>
-              </aside>
+                {activeTask === "review_computation" ? <ConfirmComputationForm /> : null}
+              </>
+            ) : (
+              <p className="border border-dashed border-grey-300 p-4 text-sm text-grey-600">
+                Confirm every income record before the deterministic computation can run.
+              </p>
             )}
+          </Card>
+          <aside className="space-y-3">
+            <div className="rounded-lg border border-grey-300 bg-grey-50 p-4">
+              <p className="text-xs font-bold uppercase text-grey-500">Authority</p>
+              <p className="mt-2 font-extrabold text-grey-900">{plan.rule.title}</p>
+              <p className="mt-2 text-sm leading-6 text-grey-600">{plan.rule.sourceTitle}</p>
+            </div>
+            {plan.computation ? (
+              <>
+                <a className={`${buttonClass("secondary")} w-full`} href={`${pdfUrl}&download=1`}>
+                  <Download aria-hidden size={18} />
+                  Download draft PDF
+                </a>
+                <div className="aspect-[3/4] overflow-hidden rounded-lg border border-grey-300 bg-grey-100">
+                  <iframe
+                    className="h-full w-full"
+                    src={`${pdfUrl}#zoom=page-width&pagemode=none`}
+                    title={`BIR Form ${selectedMeta.formCode} preview`}
+                  />
+                </div>
+              </>
+            ) : null}
+          </aside>
+        </div>
+      ) : null}
+
+      {selectedView === "handoff" ? (
+        <Card className="space-y-5">
+          <div>
+            <p className="text-xs font-bold uppercase text-primary-700">Material action</p>
+            <h2 className="mt-1 text-xl font-extrabold text-grey-900">Filing hand-off</h2>
+            <p className="mt-1 text-sm leading-6 text-grey-600">
+              This pilot prepares a guided official-channel hand-off. It does not submit to the BIR.
+            </p>
           </div>
-        ) : (
-          <>
-            {selectedObligation ? (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-grey-300 bg-grey-100 p-4">
-                <span className="text-sm font-bold text-grey-500">Current record</span>
-                <StatusBadge status={selectedObligation.status} />
-                <StatusBadge status={selectedObligation.payment_status} />
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {[
+              ["Taxpayer", data.profile?.full_name ?? "Taxpayer"],
+              ["TIN", data.taxpayerProfile?.tin_status ?? "Not provided"],
+              ["Period", selectedMeta.period],
+              ["Form", `BIR Form ${selectedMeta.formCode}`],
+              ["Amount", money(plan.computation?.output_snapshot.amountPayable ?? 0)],
+              ["Effect", "Prepare hand-off only"],
+            ].map(([label, value]) => (
+              <div className="rounded-lg border border-grey-300 bg-grey-50 p-3" key={label}>
+                <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
+                <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {activeTask === "approve_handoff" ? (
+            <div className="border-t border-grey-300 pt-5">
+              <p className="mb-3 text-sm leading-6 text-grey-700">
+                I approve this exact Q2 2026 return snapshot for guided hand-off. This approval
+                does not authorize payment.
+              </p>
+              <ApproveHandoffForm />
+            </div>
+          ) : null}
+          {activeTask === "capture_acknowledgement" ? (
+            <div className="border-t border-grey-300 pt-5">
+              <h3 className="mb-3 font-extrabold text-grey-900">Preserve filing evidence</h3>
+              <FilingAcknowledgementForm />
+            </div>
+          ) : null}
+          {plan.draft?.acknowledgement_reference ? (
+            <div className="flex items-start gap-3 bg-success-500/10 p-4">
+              <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={20} />
+              <div>
+                <p className="font-extrabold text-grey-900">Acknowledgement saved</p>
+                <p className="mt-1 text-sm text-grey-700">
+                  {plan.draft.acknowledgement_reference}
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {selectedView === "payment" ? (
+        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
+          <Card className="space-y-5">
+            <div>
+              <p className="text-xs font-bold uppercase text-primary-700">Separate approval</p>
+              <h2 className="mt-1 text-xl font-extrabold text-grey-900">Payment review</h2>
+              <p className="mt-1 text-sm leading-6 text-grey-600">
+                Filing approval never authorizes payment. Confirm this exact liability separately.
+              </p>
+            </div>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Tax type", `BIR Form ${selectedMeta.formCode}`],
+                ["Period", selectedMeta.period],
+                ["Amount", money(plan.computation?.output_snapshot.amountPayable ?? 0)],
+                ["Channel", "eGovPay test gateway"],
+                ["Filing acknowledgement", plan.draft?.acknowledgement_reference ?? "Required"],
+                ["Payment status", selectedObligation?.payment_status ?? "unpaid"],
+              ].map(([label, value]) => (
+                <div className="border-b border-grey-300 pb-3" key={label}>
+                  <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
+                  <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {activeTask === "approve_payment" ? (
+              <div className="border-t border-grey-300 pt-5">
+                <p className="mb-3 text-sm leading-6 text-grey-700">
+                  I approve opening the test payment channel for the taxpayer, period, tax type,
+                  and amount shown above.
+                </p>
+                <EgovPayCheckoutForm
+                  label="Approve and open eGovPay"
+                  pendingLabel="Preparing approved hand-off..."
+                  quarter={selectedQuarter}
+                />
               </div>
             ) : null}
-            {filingNotice ? (
-              <p className="rounded-lg border border-primary-200 bg-primary-50 p-4 text-sm font-semibold text-primary-900">
-                {filingNotice}
-              </p>
+            {paymentReturned ? (
+              <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4">
+                <AlertTriangle aria-hidden className="shrink-0 text-warning-500" size={20} />
+                <p className="text-sm leading-6 text-grey-700">
+                  The gateway returned to eTax, but that does not prove payment. Add a receipt or
+                  validated reference to finish.
+                </p>
+              </div>
             ) : null}
-            <div className="overflow-hidden rounded-lg border border-grey-300 bg-grey-100">
-              <iframe
-                className="h-[64vh] min-h-[520px] w-full bg-white md:h-[720px]"
-                src={pdfPreviewFitUrl}
-                title={`${selectedQuarterMeta.label} Form ${selectedQuarterMeta.formCode} PDF preview`}
-              />
-            </div>
-            <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
-              <FileTaxReturnForm quarter={selectedQuarter} />
-              <Link
-                className={`${buttonClass("soft")} w-full sm:w-auto`}
-                href={`/filing?quarter=${selectedQuarter}&view=payment`}
-              >
-                <CreditCard size={18} aria-hidden />
-                Pay
-              </Link>
-              <Link
-                className={`${buttonClass("primary")} w-full sm:w-auto`}
-                href={`/filing?quarter=${selectedQuarter}&view=payment&flow=file-and-pay`}
-              >
-                <CreditCard size={18} aria-hidden />
-                File &amp; Pay
-              </Link>
-            </div>
-          </>
-        )}
-      </Card>
+            {activeTask === "capture_payment_proof" && plan.progress < 100 ? (
+              <PaymentProofForm />
+            ) : null}
+            {plan.progress === 100 ? (
+              <div className="flex items-start gap-3 bg-success-500/10 p-4">
+                <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={22} />
+                <div>
+                  <p className="font-extrabold text-grey-900">Filing journey complete</p>
+                  <p className="mt-1 text-sm leading-6 text-grey-700">
+                    Filing acknowledgement and payment proof are preserved in the audit trail.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </Card>
+          <aside className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+            <Image
+              alt="eGovPay"
+              className="h-auto w-[124px]"
+              height={31}
+              priority
+              src="/egovpay-logo.webp"
+              width={124}
+            />
+            <p className="mt-4 text-2xl font-black text-grey-900">
+              {money(plan.computation?.output_snapshot.amountPayable ?? 0)}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-grey-600">
+              Controlled test hand-off. Payment remains pending until evidence is verified.
+            </p>
+          </aside>
+        </div>
+      ) : null}
     </div>
   );
 }

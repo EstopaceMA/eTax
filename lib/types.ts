@@ -1,7 +1,24 @@
 export type ChecklistStatus = "missing" | "complete";
 export type DeadlineStatus = "upcoming" | "due_soon" | "completed" | "overdue";
-export type FilingStatus = "draft" | "ready" | "filed" | "paid";
-export type PaymentStatus = "unpaid" | "paid" | "not_required";
+export type FilingStatus =
+  | "draft"
+  | "review"
+  | "ready"
+  | "handed_off"
+  | "pending_verification"
+  | "filed"
+  | "paid"
+  | "blocked"
+  | "exception";
+export type PaymentStatus =
+  | "unpaid"
+  | "approval_required"
+  | "handed_off"
+  | "pending_verification"
+  | "paid"
+  | "not_required"
+  | "blocked"
+  | "exception";
 
 export type Profile = {
   id: string;
@@ -61,6 +78,10 @@ export type IncomeRecordUpload = {
   content_type: string | null;
   size_bytes: number | null;
   total_income: number | null;
+  extraction_status: "provisional" | "confirmed" | "needs_review";
+  extraction_confidence: number | null;
+  extracted_text: string | null;
+  confirmed_at: string | null;
   created_at: string;
   signed_url?: string;
 };

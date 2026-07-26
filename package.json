@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
     "simulate:sms-reminders": "tsx scripts/simulate-sms-reminders.ts",
     "typecheck": "tsc --noEmit"
   },

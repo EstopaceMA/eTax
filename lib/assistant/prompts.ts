@@ -24,6 +24,40 @@ ${question}
   `.trim();
 }
 
+export function buildAgenticTaxPrompt(input: {
+  question: string;
+  workspaceContext: string;
+  documents: HelpDocument[];
+}) {
+  const helpContext = input.documents
+    .map(
+      ({ filename, content }, index) =>
+        `[eTax help document ${index + 1}: ${filename}]\n${content}`,
+    )
+    .join("\n\n");
+
+  return `
+SYSTEM INSTRUCTIONS
+You are the conversational interface for the controlled eTaxPH Orchestrator.
+${sharedRules}
+Explain the current workspace state using only the minimized context and help documents below.
+The server-side workflow, not you, owns tasks, computation, approvals, filing status, and payment status.
+Never calculate tax, claim that an external action succeeded, or ask the user to bypass the displayed approval flow.
+Clearly label material statements as Fact, Assumption, Estimate, or Recommendation.
+The active rule is a controlled demo fixture and is not official tax advice.
+Keep the answer under 180 words.
+
+MINIMIZED WORKSPACE CONTEXT
+${input.workspaceContext}
+
+ETAX HELP DOCUMENTS
+${helpContext || "No help document was selected."}
+
+USER QUESTION
+${input.question}
+  `.trim();
+}
+
 export function buildEtaxAppPrompt(
   question: string,
   documents: HelpDocument[],

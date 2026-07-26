@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import {
   Headphones,
   LoaderCircle,
@@ -23,6 +24,14 @@ type Message = {
   role: "assistant" | "user";
   content: string;
   mode?: "etax-app" | "ph-tax";
+  classification?: "fact" | "assumption" | "estimate" | "recommendation";
+  confidence?: number;
+  nextAction?: {
+    href: string;
+    label: string;
+    title: string;
+  };
+  sources?: string[];
 };
 
 const welcomeMessage: Message = {
@@ -114,8 +123,12 @@ export function AssistantChat() {
       });
       const payload = (await response.json()) as {
         answer?: string;
+        classification?: Message["classification"];
+        confidence?: number;
         error?: string;
         mode?: "etax-app" | "ph-tax";
+        nextAction?: Message["nextAction"];
+        sources?: string[];
       };
 
       if (!response.ok || !payload.answer) {
@@ -130,7 +143,11 @@ export function AssistantChat() {
           id: newMessageId(),
           role: "assistant",
           content: answer,
+          classification: payload.classification,
+          confidence: payload.confidence,
           mode: payload.mode,
+          nextAction: payload.nextAction,
+          sources: payload.sources,
         },
       ]);
     } catch (error) {
@@ -256,6 +273,35 @@ export function AssistantChat() {
               >
                 <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
+              {message.role === "assistant" && message.nextAction ? (
+                <div className="mt-2 rounded-lg border border-primary-200 bg-primary-50 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-bold uppercase text-primary-700">
+                      {message.classification ?? "recommendation"}
+                    </p>
+                    {typeof message.confidence === "number" ? (
+                      <span className="text-[11px] font-bold text-grey-500">
+                        {Math.round(message.confidence * 100)}%
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-sm font-extrabold text-grey-900">
+                    {message.nextAction.title}
+                  </p>
+                  <Link
+                    className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-primary-500 px-3 text-xs font-bold text-white transition hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+                    href={message.nextAction.href}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {message.nextAction.label}
+                  </Link>
+                  {message.sources && message.sources.length > 0 ? (
+                    <p className="mt-2 line-clamp-2 text-[11px] leading-4 text-grey-500">
+                      Source: {message.sources.join(", ")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ))}
 

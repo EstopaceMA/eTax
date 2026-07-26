@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import {
-  buildEtaxAppPrompt,
-  buildPhilippineTaxPrompt,
+  buildAgenticTaxPrompt,
   isEtaxAppQuestion,
 } from "@/lib/assistant/prompts";
 import { findEtaxHelpDocuments } from "@/lib/assistant/knowledge";
 import { generateEgovAssistantResponse } from "@/lib/egov/ai-assistant";
 import { createClient } from "@/lib/supabase/server";
+import { ensureWorkspace, getWorkspaceData } from "@/lib/data";
+import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 
 const maxQuestionLength = 1_500;
 
@@ -53,16 +54,59 @@ export async function POST(request: Request) {
   try {
     const mode = isEtaxAppQuestion(question) ? "etax-app" : "ph-tax";
     const documents = mode === "etax-app" ? await findEtaxHelpDocuments(question, 2) : [];
-    const prompt =
-      mode === "etax-app"
-        ? buildEtaxAppPrompt(question, documents)
-        : buildPhilippineTaxPrompt(question);
+    await ensureWorkspace();
+    const [plan, workspace] = await Promise.all([
+      getAgenticPlan(),
+      getWorkspaceData(),
+    ]);
+    const prompt = buildAgenticTaxPrompt({
+      question,
+      documents,
+      workspaceContext: JSON.stringify({
+        activeTask: {
+          action: plan.task.action_label,
+          blocker: plan.task.blocker,
+          confidence: plan.task.confidence,
+          owner: plan.task.owner_agent,
+          reason: plan.task.reason,
+          title: plan.task.title,
+        },
+        computation: plan.computation
+          ? {
+              amountPayable: plan.computation.output_snapshot.amountPayable,
+              currency: plan.computation.output_snapshot.currency,
+              label: "Controlled demo computation",
+              period: plan.computation.input_snapshot.period,
+              ruleVersion: plan.rule.version,
+            }
+          : null,
+        filingStatus: workspace.filingObligations.find(
+          ({ period }) => period === "Q2 2026",
+        )?.status,
+        paymentStatus: workspace.filingObligations.find(
+          ({ period }) => period === "Q2 2026",
+        )?.payment_status,
+        progress: plan.progress,
+        taxpayerClass: workspace.taxpayerProfile?.taxpayer_type,
+      }),
+    });
     const result = await generateEgovAssistantResponse(prompt);
 
     return NextResponse.json({
       answer: result.answer,
+      assumptions: plan.computation?.assumptions ?? [],
+      classification: "recommendation",
+      confidence: plan.task.confidence,
       mode,
-      sources: documents.map(({ filename }) => filename),
+      nextAction: {
+        href: plan.task.action_href,
+        label: plan.task.action_label,
+        title: plan.task.title,
+      },
+      sources: [
+        ...documents.map(({ filename }) => filename),
+        plan.rule.sourceTitle,
+      ],
     });
   } catch (error) {
     console.error("eTax assistant request failed", error);
