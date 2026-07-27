@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Public Sans", "Helvetica", "Arial", sans-serif;
-  --font-display: "Barlow", "Helvetica", "Arial", sans-serif;
+  --font-sans: var(--font-inter), "Helvetica", "Arial", sans-serif;
+  --font-display: var(--font-inter), "Helvetica", "Arial", sans-serif;
+  --font-weight-bold: 650;
+  --font-weight-extrabold: 700;
+  --font-weight-black: 750;
   --color-primary-50: #eaf2ff;
   --color-primary-100: #d8e8ff;
   --color-primary-200: #b8d3ff;
@@ -24,8 +27,9 @@
   --color-grey-500: #919eab;
   --color-grey-600: #637381;
   --color-grey-700: #454f5b;
-  --color-grey-800: #1c252e;
-  --color-grey-900: #141a21;
+  --color-grey-800: #3f4d5a;
+  --color-grey-900: #2f3b47;
+  --color-surface-inverse: #141a21;
 }
 
 :root {
@@ -39,8 +43,13 @@
 body {
   min-height: 100vh;
   background: #f4f6f8;
-  color: #1c252e;
-  font-family: "Public Sans", "Helvetica", "Arial", sans-serif;
+  color: var(--color-grey-800);
+  font-family: var(--font-inter), "Helvetica", "Arial", sans-serif;
+}
+
+.protected-main:has(> [data-full-bleed="true"]) {
+  max-width: none;
+  padding: 0;
 }
 
 a,

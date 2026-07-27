@@ -3,28 +3,52 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bot,
   CalendarDays,
   ClipboardCheck,
   FileCheck2,
   LayoutDashboard,
+  type LucideIcon,
 } from "lucide-react";
+import { ChatbotIcon } from "@/components/chatbot-icon";
 import { cn } from "@/lib/utils";
 
-const desktopNavItems = [
+type NavigationItem = {
+  href: string;
+  label: string;
+  desktopLabel: string;
+  icon: LucideIcon | "chatbot";
+};
+
+const desktopNavItems: NavigationItem[] = [
   { href: "/dashboard", label: "Home", desktopLabel: "Dashboard", icon: LayoutDashboard },
   { href: "/documents", label: "Docs", desktopLabel: "Documents", icon: ClipboardCheck },
   { href: "/deadlines", label: "Dates", desktopLabel: "Deadlines", icon: CalendarDays },
   { href: "/filing", label: "File", desktopLabel: "Filing tracker", icon: FileCheck2 },
+  { href: "/agentic", label: "Agent", desktopLabel: "Agentic filing", icon: "chatbot" },
 ];
 
 const mobileNavItems = [
   desktopNavItems[0],
   desktopNavItems[1],
-  { label: "AI", icon: Bot, type: "assistant" as const },
+  { label: "AI", icon: "chatbot" as const, type: "assistant" as const },
   desktopNavItems[2],
-  desktopNavItems[3],
+  desktopNavItems[4],
 ];
+
+function NavigationIcon({
+  icon,
+  size,
+}: {
+  icon: LucideIcon | "chatbot";
+  size: number;
+}) {
+  if (icon === "chatbot") {
+    return <ChatbotIcon size={size} />;
+  }
+
+  const Icon = icon;
+  return <Icon aria-hidden size={size} />;
+}
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -54,7 +78,7 @@ export function DesktopNav() {
             href={item.href}
             key={item.href}
           >
-            <item.icon size={18} aria-hidden />
+            <NavigationIcon icon={item.icon} size={item.icon === "chatbot" ? 24 : 18} />
             {item.desktopLabel}
           </Link>
         );
@@ -72,15 +96,14 @@ export function MobileNav() {
         if (!("href" in item)) {
           return (
             <div className="relative flex min-h-10 items-end justify-center" key={item.label}>
-              <div className="absolute -top-7 grid size-16 place-items-center rounded-full bg-grey-50" />
               <button
                 aria-label="Open eTax AI Assistant"
                 className="group relative -top-5 flex flex-col items-center rounded-lg text-[11px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
                 onClick={openAssistant}
                 type="button"
               >
-                <span className="grid size-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_8px_20px_rgba(7,92,247,0.24)] ring-4 ring-grey-50 transition group-hover:bg-primary-700">
-                  <item.icon size={26} aria-hidden strokeWidth={2.2} />
+                <span className="grid size-14 place-items-center rounded-full bg-white shadow-[0_8px_20px_rgba(7,92,247,0.2)] ring-4 ring-grey-50 transition group-hover:bg-primary-50">
+                  <NavigationIcon icon={item.icon} size={48} />
                 </span>
               </button>
             </div>
@@ -101,7 +124,7 @@ export function MobileNav() {
             href={item.href}
             key={item.href}
           >
-            <item.icon size={17} aria-hidden />
+            <NavigationIcon icon={item.icon} size={item.icon === "chatbot" ? 22 : 17} />
             {item.label}
           </Link>
         );

@@ -2,14 +2,88 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/data";
 import { extractInvoiceTotalFromDocument } from "@/lib/egov/document-extractor";
-import { sendFilingConfirmationSms } from "@/lib/filing-confirmation-sms";
-import { getPeriodSlug, getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
+import { appendAudit, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
+import {
+  getPeriodSlug,
+  getQuarterMeta,
+  isFilingPeriodOpen,
+  parseFilingQuarter,
+} from "@/lib/filing-periods";
+import type { FilingQuarter } from "@/lib/filing-periods";
 import type { ChecklistStatus, FilingStatus, PaymentStatus } from "@/lib/types";
+
+async function blockLockedRecordChange(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  quarter: FilingQuarter,
+  recordId: string,
+) {
+  const quarterMeta = getQuarterMeta(quarter);
+  const { data: obligation } = await supabase
+    .from("filing_obligations")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("period", quarterMeta.period)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!obligation) {
+    return false;
+  }
+
+  const { data: lockedDraft } = await supabase
+    .from("return_drafts")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("filing_obligation_id", obligation.id)
+    .in("state", ["handed_off", "pending_verification", "filed"])
+    .limit(1)
+    .maybeSingle();
+
+  if (!lockedDraft) {
+    return false;
+  }
+
+  const { data: existingException } = await supabase
+    .from("agent_exceptions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("filing_obligation_id", obligation.id)
+    .eq("exception_type", "locked_record_change")
+    .eq("state", "open")
+    .limit(1)
+    .maybeSingle();
+
+  if (!existingException) {
+    await supabase.from("agent_exceptions").insert({
+      user_id: userId,
+      filing_obligation_id: obligation.id,
+      exception_type: "locked_record_change",
+      title: "A handed-off return includes this record",
+      detail: "The requested record change was blocked to preserve the approved return snapshot.",
+      state: "open",
+      recovery_action: "Review the affected period and create a controlled adjustment.",
+    });
+  }
+
+  await appendAudit(supabase, {
+    userId,
+    actorType: "system",
+    actorId: "Assurance Agent",
+    action: "income_record.change_blocked",
+    targetType: "income_record",
+    targetId: recordId,
+    eventData: { returnDraftId: lockedDraft.id },
+  });
+
+  return true;
+}
 
 export async function updateChecklistItem(formData: FormData) {
   const user = await requireUser();
@@ -45,54 +119,8 @@ export async function updateFilingStatus(formData: FormData) {
 }
 
 export async function fileTaxReturn(formData: FormData) {
-  const user = await requireUser();
-  const supabase = await createClient();
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
-  const quarterMeta = getQuarterMeta(quarter);
-  let smsStatus = "skipped";
-
-  const { data: obligation } = await supabase
-    .from("filing_obligations")
-    .select("id, payment_status, status")
-    .eq("user_id", user.id)
-    .in("period", [quarterMeta.period, ...(quarterMeta.periodAliases ?? [])])
-    .maybeSingle();
-
-  if (!obligation) {
-    redirect(`/filing?quarter=${quarter}&view=bir-form&filing=missing`);
-  }
-
-  if (obligation.status === "filed" || obligation.status === "paid") {
-    redirect(`/filing?quarter=${quarter}&view=bir-form&filing=already-filed`);
-  }
-
-  await supabase
-    .from("filing_obligations")
-    .update({ status: "filed" })
-    .eq("id", obligation.id)
-    .eq("user_id", user.id);
-
-  try {
-    const { data: taxpayerProfile } = await supabase
-      .from("taxpayer_profiles")
-      .select("mobile_number")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const result = await sendFilingConfirmationSms({
-      isPaid: obligation.payment_status === "paid",
-      quarter,
-      taxpayerProfile,
-    });
-
-    smsStatus = result.status === "sent" ? "sent" : result.reason;
-  } catch (error) {
-    console.error("Could not send filing confirmation SMS.", error);
-    smsStatus = "failed";
-  }
-
-  revalidatePath("/filing");
-  revalidatePath("/dashboard");
-  redirect(`/filing?quarter=${quarter}&view=bir-form&filing=filed&sms=${smsStatus}`);
+  redirect(`/filing?quarter=${quarter}&view=handoff`);
 }
 
 export async function uploadIncomeRecord(formData: FormData) {
@@ -102,6 +130,10 @@ export async function uploadIncomeRecord(formData: FormData) {
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
   const quarterMeta = getQuarterMeta(quarter);
   const file = formData.get("file");
+
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
 
   if (!(file instanceof File) || file.size === 0) {
     return;
@@ -123,11 +155,14 @@ export async function uploadIncomeRecord(formData: FormData) {
     .slice(0, 48);
   const storagePath = `${user.id}/${getPeriodSlug(quarterMeta.period)}/${randomUUID()}-${safeFilename || "income-record"}.${extension}`;
   const uploadBody = Buffer.from(await file.arrayBuffer());
+  const contentHash = createHash("sha256").update(uploadBody).digest("hex");
   let extractedTotalIncome: number | null = null;
+  let extractedText: string | null = null;
 
   try {
     const extraction = await extractInvoiceTotalFromDocument(file, uploadBody);
     extractedTotalIncome = extraction.totalIncome;
+    extractedText = extraction.extractedText;
   } catch (error) {
     console.error("Could not extract invoice total from income record.", error);
   }
@@ -166,7 +201,11 @@ export async function uploadIncomeRecord(formData: FormData) {
     storage_path: storagePath,
     content_type: file.type,
     size_bytes: file.size,
+    content_hash: contentHash,
     total_income: extractedTotalIncome,
+    extraction_status: extractedTotalIncome === null ? "needs_review" : "provisional",
+    extraction_confidence: extractedTotalIncome === null ? null : 0.75,
+    extracted_text: extractedText,
   });
 
   if (insertError) {
@@ -196,7 +235,21 @@ export async function uploadIncomeRecord(formData: FormData) {
     }
   }
 
-  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  await appendAudit(supabase, {
+    userId: user.id,
+    actorType: "user",
+    actorId: user.id,
+    action: "income_record.uploaded",
+    targetType: "income_record",
+    targetId: storagePath,
+    eventData: {
+      extractionStatus: extractedTotalIncome === null ? "needs_review" : "provisional",
+      filename: file.name,
+      period: quarterMeta.period,
+    },
+  });
+  await refreshAgenticPlan(quarter);
+  revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
 }
 
@@ -206,8 +259,18 @@ export async function updateIncomeRecordTotal(formData: FormData) {
   const adminSupabase = createAdminClient();
   const id = String(formData.get("id"));
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
   const storagePath = String(formData.get("storage_path") ?? "");
   const rawTotalIncome = String(formData.get("total_income") ?? "").trim();
+
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
+
+  if (await blockLockedRecordChange(supabase, user.id, quarter, id)) {
+    revalidatePath("/filing");
+    redirect(`/filing?quarter=${quarter}&view=records&notice=record-locked`);
+  }
 
   const totalIncome =
     rawTotalIncome.length === 0 ? null : Number(rawTotalIncome.replace(/,/g, ""));
@@ -223,7 +286,12 @@ export async function updateIncomeRecordTotal(formData: FormData) {
   if (isUuid) {
     const { error } = await supabase
       .from("income_record_uploads")
-      .update({ total_income: totalIncome })
+      .update({
+        total_income: totalIncome,
+        extraction_status: "provisional",
+        extraction_confidence: totalIncome === null ? null : 0.75,
+        confirmed_at: null,
+      })
       .eq("id", id)
       .eq("user_id", user.id);
 
@@ -255,7 +323,17 @@ export async function updateIncomeRecordTotal(formData: FormData) {
     }
   }
 
-  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  await appendAudit(supabase, {
+    userId: user.id,
+    actorType: "user",
+    actorId: user.id,
+    action: "income_record.amount_updated",
+    targetType: "income_record",
+    targetId: id,
+    eventData: { totalIncome, verificationState: "provisional" },
+  });
+  await refreshAgenticPlan(quarter);
+  revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
 }
 
@@ -265,10 +343,20 @@ export async function deleteIncomeRecord(formData: FormData) {
   const adminSupabase = createAdminClient();
   const id = String(formData.get("id"));
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
   const storagePath = String(formData.get("storage_path") ?? "");
   const isUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const isOwnStoragePath = storagePath.startsWith(`${user.id}/`);
+
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
+
+  if (await blockLockedRecordChange(supabase, user.id, quarter, id)) {
+    revalidatePath("/filing");
+    redirect(`/filing?quarter=${quarter}&view=records&notice=record-locked`);
+  }
 
   if (isUuid) {
     const { error } = await supabase
@@ -299,7 +387,17 @@ export async function deleteIncomeRecord(formData: FormData) {
     }
   }
 
-  revalidatePath(`/filing?quarter=${quarter}&view=documents`);
+  await appendAudit(supabase, {
+    userId: user.id,
+    actorType: "user",
+    actorId: user.id,
+    action: "income_record.deleted",
+    targetType: "income_record",
+    targetId: id,
+    eventData: { storagePath },
+  });
+  await refreshAgenticPlan(quarter);
+  revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
   revalidatePath("/dashboard");
 }

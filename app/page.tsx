@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Bot,
   CheckCircle2,
   ExternalLink,
   ReceiptText,
@@ -10,6 +9,7 @@ import {
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
+import { ChatbotIcon } from "@/components/chatbot-icon";
 
 export default function HomePage() {
   return (
@@ -28,7 +28,7 @@ export default function HomePage() {
         <div className="grid flex-1 content-center gap-6 py-8 md:grid-cols-[0.9fr_1.1fr] md:items-center md:gap-10 md:py-12">
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1.5 text-xs font-bold uppercase text-primary-900">
-              <Bot size={15} aria-hidden />
+              <ChatbotIcon size={22} />
               Guided tax workspace
             </div>
             <h1 className="max-w-xl text-4xl font-black leading-[1.03] tracking-normal text-grey-900 sm:text-5xl md:text-6xl">

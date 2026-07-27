@@ -1,0 +1,147 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import test from "node:test";
+
+const root = process.cwd();
+
+async function source(relativePath: string) {
+  return readFile(path.join(root, relativePath), "utf8");
+}
+
+test("viewing a PDF has no filing status side effect", async () => {
+  const route = await source("app/api/filing/pdf/route.ts");
+
+  assert.doesNotMatch(route, /\.update\s*\(/);
+  assert.doesNotMatch(route, /status:\s*["']ready["']/);
+});
+
+test("gateway return records pending verification, never paid", async () => {
+  const route = await source("app/api/egovpay/return/route.ts");
+
+  assert.match(route, /pending_verification/);
+  assert.doesNotMatch(route, /payment_status:\s*["']paid["']/);
+});
+
+test("controlled actions require acknowledgement and proof before terminal states", async () => {
+  const actions = await source("app/actions/agentic.ts");
+
+  assert.match(actions, /acknowledgement_reference:\s*reference/);
+  assert.match(actions, /payment\.proof_recorded/);
+  assert.match(actions, /payment_status:\s*"paid"/);
+});
+
+test("changes to records in handed-off returns are blocked and audited", async () => {
+  const actions = await source("app/actions/workspace.ts");
+
+  assert.match(actions, /locked_record_change/);
+  assert.match(actions, /income_record\.change_blocked/);
+  assert.match(actions, /returnDraftId/);
+});
+
+test("audit events are append-only for authenticated taxpayers", async () => {
+  const migration = await source("supabase/migrations/011_agentic_vertical_slice.sql");
+  const auditPolicies = migration.slice(migration.indexOf('create policy "Users can append own audit events"'));
+
+  assert.match(auditPolicies, /audit_events for insert/);
+  assert.match(auditPolicies, /audit_events for select/);
+  assert.doesNotMatch(auditPolicies, /audit_events for update/);
+  assert.doesNotMatch(auditPolicies, /audit_events for delete/);
+});
+
+test("agentic filing supports period selection and server-side period locks", async () => {
+  const orchestrator = await source("lib/agentic/orchestrator.ts");
+  const workspaceActions = await source("app/actions/workspace.ts");
+
+  assert.match(orchestrator, /selectedQuarter: FilingQuarter/);
+  assert.match(orchestrator, /isFilingPeriodOpen/);
+  assert.match(workspaceActions, /This filing period has not opened yet/);
+});
+
+test("income evidence stores a content hash for annual deduplication", async () => {
+  const migration = await source("supabase/migrations/012_agentic_chat_periods.sql");
+  const workspaceActions = await source("app/actions/workspace.ts");
+
+  assert.match(migration, /content_hash/);
+  assert.match(workspaceActions, /createHash\("sha256"\)/);
+});
+
+test("agentic filing is a main workspace, not an assistant tab", async () => {
+  const agenticPage = await source("app/(protected)/agentic/page.tsx");
+  const protectedLayout = await source("app/(protected)/layout.tsx");
+  const agenticChat = await source("components/agentic-chat.tsx");
+  const assistantShell = await source("components/assistant-shell.tsx");
+  const navigation = await source("components/app-nav.tsx");
+
+  assert.match(agenticPage, /<AgenticChat/);
+  assert.match(agenticPage, /data-full-bleed="true"/);
+  assert.doesNotMatch(agenticPage, /rounded-xl|shadow-\[|border border-grey/);
+  assert.match(protectedLayout, /protected-main/);
+  assert.doesNotMatch(assistantShell, /AgenticChat/);
+  assert.match(navigation, /href: "\/agentic"/);
+  assert.doesNotMatch(agenticChat, /JourneyProgress/);
+});
+
+test("agentic filing renders an accessible cumulative timeline", async () => {
+  const agenticChat = await source("components/agentic-chat.tsx");
+
+  assert.match(agenticChat, /snapshot\.timeline\.map/);
+  assert.match(agenticChat, /aria-expanded=\{expanded\}/);
+  assert.match(agenticChat, /expanded=\{!collapsedStages\.has\(item\.stage\)\}/);
+  assert.match(agenticChat, /eTaxPHCheckIcon\.svg/);
+  assert.match(agenticChat, /prefers-reduced-motion: reduce/);
+  assert.match(agenticChat, /latestStageRef\.current\?\.focus/);
+});
+
+test("agentic conversation follows the timeline and uses a fixed bottom composer", async () => {
+  const agenticChat = await source("components/agentic-chat.tsx");
+  const timelineIndex = agenticChat.indexOf("snapshot.timeline.map");
+  const conversationIndex = agenticChat.indexOf("<AgenticConversation");
+  const composerIndex = agenticChat.indexOf("<form", conversationIndex);
+
+  assert.ok(timelineIndex > -1);
+  assert.ok(conversationIndex > timelineIndex);
+  assert.ok(composerIndex > conversationIndex);
+  assert.match(agenticChat.slice(composerIndex), /shrink-0 border-t/);
+  assert.match(agenticChat, /messages\.slice\(-6\)/);
+  assert.match(agenticChat, /content\.slice\(0, 500\)/);
+});
+
+test("agentic answers refresh authenticated data without persisting chat history", async () => {
+  const route = await source("app/api/assistant/route.ts");
+  const agenticChat = await source("components/agentic-chat.tsx");
+
+  assert.match(route, /refreshAgenticPlan\(inferredQuarter \?\? requestedQuarter\)/);
+  assert.match(route, /maxAgenticHistoryItems = 6/);
+  assert.match(route, /buildAgenticDataAnswer/);
+  assert.doesNotMatch(agenticChat, /localStorage\.setItem\([^,]*message/i);
+});
+
+test("agentic filing hydrates with deterministic period markup", async () => {
+  const agenticChat = await source("components/agentic-chat.tsx");
+
+  assert.match(agenticChat, /useState<FilingQuarter>\(2\)/);
+  assert.doesNotMatch(agenticChat, /useState<FilingQuarter>\(\(\) =>/);
+  assert.match(agenticChat, /if \(!clientReady\) \{\s+return;/);
+  assert.match(agenticChat, /clientReady\s+\? new Date\(\)/);
+});
+
+test("assistant surfaces use the branded chatbot icon", async () => {
+  const icon = await source("components/chatbot-icon.tsx");
+  const assistantChat = await source("components/assistant-chat.tsx");
+  const assistantShell = await source("components/assistant-shell.tsx");
+  const agenticChat = await source("components/agentic-chat.tsx");
+  const navigation = await source("components/app-nav.tsx");
+
+  assert.match(icon, /eTaxPHChatbotIcon\.svg/);
+
+  for (const assistantSurface of [
+    assistantChat,
+    assistantShell,
+    agenticChat,
+    navigation,
+  ]) {
+    assert.match(assistantSurface, /ChatbotIcon/);
+    assert.doesNotMatch(assistantSurface, /<Bot\b|MessageCircleQuestion|Headphones/);
+  }
+});
