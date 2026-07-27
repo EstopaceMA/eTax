@@ -15,11 +15,15 @@ import type {
   ComputationRun,
   ReturnDraft,
 } from "@/lib/agentic/types";
-import { getQuarterMeta } from "@/lib/filing-periods";
+import {
+  filingQuarters,
+  getQuarterMeta,
+  isFilingPeriodOpen,
+  type FilingQuarter,
+} from "@/lib/filing-periods";
 import { createClient } from "@/lib/supabase/server";
 import type { FilingObligation, IncomeRecordUpload } from "@/lib/types";
 
-const supportedQuarter = 2;
 const taskMetadata: Record<
   AgenticStep,
   {
@@ -28,7 +32,6 @@ const taskMetadata: Record<
     title: string;
     reason: string;
     actionLabel: string;
-    href: string;
     expectedOutput: string[];
   }
 > = {
@@ -38,7 +41,6 @@ const taskMetadata: Record<
     title: "Add this quarter's income records",
     reason: "The filing workspace needs evidence before it can prepare a review.",
     actionLabel: "Add records",
-    href: "/filing?quarter=2&view=records",
     expectedOutput: ["At least one income record"],
   },
   confirm_extraction: {
@@ -47,16 +49,14 @@ const taskMetadata: Record<
     title: "Confirm extracted income",
     reason: "Extracted values remain provisional until you verify them.",
     actionLabel: "Review records",
-    href: "/filing?quarter=2&view=records",
     expectedOutput: ["Confirmed amount for every record"],
   },
   review_computation: {
     ownerAgent: "Computation Agent",
     risk: "high",
     title: "Review the demo computation",
-    reason: "Check the records, assumptions, trace, and fixed pilot liability.",
+    reason: "Check the records, assumptions, trace, and illustrative pilot liability.",
     actionLabel: "Review computation",
-    href: "/filing?quarter=2&view=review",
     expectedOutput: ["Reviewed return snapshot"],
   },
   approve_handoff: {
@@ -65,7 +65,6 @@ const taskMetadata: Record<
     title: "Approve the filing hand-off",
     reason: "Approval applies only to the exact return snapshot shown in review.",
     actionLabel: "Review hand-off",
-    href: "/filing?quarter=2&view=handoff",
     expectedOutput: ["Payload-bound filing approval"],
   },
   capture_acknowledgement: {
@@ -74,7 +73,6 @@ const taskMetadata: Record<
     title: "Record the filing acknowledgement",
     reason: "A hand-off is not a completed filing until acknowledgement evidence is saved.",
     actionLabel: "Add acknowledgement",
-    href: "/filing?quarter=2&view=handoff",
     expectedOutput: ["Official-channel acknowledgement reference"],
   },
   approve_payment: {
@@ -83,7 +81,6 @@ const taskMetadata: Record<
     title: "Approve the separate payment hand-off",
     reason: "Filing approval never authorizes payment.",
     actionLabel: "Review payment",
-    href: "/filing?quarter=2&view=payment",
     expectedOutput: ["Payload-bound payment approval"],
   },
   capture_payment_proof: {
@@ -92,7 +89,6 @@ const taskMetadata: Record<
     title: "Add payment proof",
     reason: "Gateway navigation alone cannot verify that the liability was paid.",
     actionLabel: "Add proof",
-    href: "/filing?quarter=2&view=payment",
     expectedOutput: ["Payment reference and proof"],
   },
 };
@@ -130,6 +126,7 @@ function taskState(
   step: AgenticStep,
   activeStep: AgenticStep,
   facts: WorkflowFacts,
+  periodOpen: boolean,
 ): {
   state: AgentTask["state"];
   blocker: string | null;
@@ -137,6 +134,14 @@ function taskState(
 } {
   const stepIndex = agenticSteps.indexOf(step);
   const activeIndex = agenticSteps.indexOf(activeStep);
+
+  if (!periodOpen) {
+    return {
+      state: "blocked",
+      blocker: "This filing period has not opened yet.",
+      confidence: 1,
+    };
+  }
 
   if (facts.paymentVerified || stepIndex < activeIndex) {
     return { state: "completed", blocker: null, confidence: 1 };
@@ -169,6 +174,7 @@ async function prepareComputation(
   userId: string,
   obligation: FilingObligation,
   records: IncomeRecordUpload[],
+  formCode: "1701Q" | "1701A",
 ) {
   if (
     records.length === 0 ||
@@ -257,7 +263,7 @@ async function prepareComputation(
         review_snapshot: {
           amountPayable: result.amountPayable,
           currency: result.currency,
-          form: "1701Q",
+          form: formCode,
           period: obligation.period,
           recordCount: records.length,
           totalIncome: input.totalIncome,
@@ -271,7 +277,7 @@ async function prepareComputation(
           {
             code: "demo_rule",
             status: "warning",
-            message: "This draft uses a fixed pilot liability, not a production tax rule.",
+            message: "This draft uses an illustrative 6% pilot rule, not a production tax rule.",
           },
         ],
       })
@@ -297,7 +303,40 @@ async function prepareComputation(
   return { computation, draft };
 }
 
-export async function refreshAgenticPlan(): Promise<AgenticPlan> {
+function deduplicateAnnualRecords(records: IncomeRecordUpload[]) {
+  const seen = new Set<string>();
+
+  return records.filter((record) => {
+    const key = record.content_hash ? `hash:${record.content_hash}` : `id:${record.id}`;
+
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function taskView(step: AgenticStep) {
+  if (step === "collect_records" || step === "confirm_extraction") {
+    return "records";
+  }
+
+  if (step === "review_computation") {
+    return "review";
+  }
+
+  if (step === "approve_handoff" || step === "capture_acknowledgement") {
+    return "handoff";
+  }
+
+  return "payment";
+}
+
+export async function refreshAgenticPlan(
+  selectedQuarter: FilingQuarter = 2,
+): Promise<AgenticPlan> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -307,7 +346,8 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
     throw new Error("You must be signed in to refresh the agentic plan.");
   }
 
-  const quarter = getQuarterMeta(supportedQuarter);
+  const quarter = getQuarterMeta(selectedQuarter);
+  const periodOpen = isFilingPeriodOpen(quarter.opensOn);
   const { data: obligationData, error: obligationError } = await supabase
     .from("filing_obligations")
     .select("*")
@@ -319,11 +359,15 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
 
   if (obligationError || !obligationData) {
     throw new Error(
-      obligationError?.message ?? "The Q2 2026 filing obligation was not found.",
+      obligationError?.message ?? `The ${quarter.period} filing obligation was not found.`,
     );
   }
 
   const obligation = obligationData as FilingObligation;
+  const recordPeriods =
+    selectedQuarter === 4
+      ? filingQuarters.flatMap(({ period, periodAliases = [] }) => [period, ...periodAliases])
+      : [quarter.period, ...(quarter.periodAliases ?? [])];
   const [
     recordsResult,
     openExceptionResult,
@@ -334,7 +378,7 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
       .from("income_record_uploads")
       .select("*")
       .eq("user_id", user.id)
-      .in("period", [quarter.period, ...(quarter.periodAliases ?? [])])
+      .in("period", recordPeriods)
       .order("created_at", { ascending: true }),
     supabase
       .from("agent_exceptions")
@@ -352,29 +396,50 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
       .limit(1),
     supabase
       .from("payment_evidence")
-      .select("id, payment_intent_id")
-      .eq("user_id", user.id),
+      .select("id, payment_intent_id, reference, original_filename, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (recordsResult.error) {
     throw new Error(`Could not load agent evidence: ${recordsResult.error.message}`);
   }
 
-  const records = (recordsResult.data as IncomeRecordUpload[] | null) ?? [];
-  const { computation, draft } = await prepareComputation(
-    supabase,
-    user.id,
-    obligation,
-    records,
-  );
+  if (paymentIntentResult.error || paymentEvidenceResult.error) {
+    throw new Error(
+      paymentIntentResult.error?.message ??
+        paymentEvidenceResult.error?.message ??
+        "Could not load payment evidence.",
+    );
+  }
+
+  const loadedRecords = (recordsResult.data as IncomeRecordUpload[] | null) ?? [];
+  const records =
+    selectedQuarter === 4 ? deduplicateAnnualRecords(loadedRecords) : loadedRecords;
+  const { computation, draft } = periodOpen
+    ? await prepareComputation(
+        supabase,
+        user.id,
+        obligation,
+        records,
+        quarter.formCode,
+      )
+    : { computation: null, draft: null };
   const paymentIntent = paymentIntentResult.data?.[0] as
-    | { id: string; state: string }
+    | {
+        id: string;
+        state: string;
+        amount: number | string;
+        currency: string;
+        provider_reference: string | null;
+      }
     | undefined;
+  const paymentProof = (paymentEvidenceResult.data ?? []).find(
+    ({ payment_intent_id }) => payment_intent_id === paymentIntent?.id,
+  );
   const paymentVerified =
     paymentIntent?.state === "verified" ||
-    (paymentEvidenceResult.data ?? []).some(
-      ({ payment_intent_id }) => payment_intent_id === paymentIntent?.id,
-    );
+    Boolean(paymentProof);
   const facts: WorkflowFacts = {
     uploadCount: records.length,
     unconfirmedCount: records.filter(
@@ -396,7 +461,7 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
 
   const taskRows = agenticSteps.map((step) => {
     const metadata = taskMetadata[step];
-    const status = taskState(step, activeStep, facts);
+    const status = taskState(step, activeStep, facts, periodOpen);
 
     return {
       user_id: user.id,
@@ -408,7 +473,7 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
       confidence: status.confidence,
       title:
         facts.paymentVerified && step === "capture_payment_proof"
-          ? "Q2 filing journey complete"
+          ? `${quarter.period} filing journey complete`
           : metadata.title,
       reason:
         facts.paymentVerified && step === "capture_payment_proof"
@@ -421,8 +486,8 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
           : metadata.actionLabel,
       action_href:
         facts.paymentVerified && step === "capture_payment_proof"
-          ? "/filing?quarter=2&view=review"
-          : metadata.href,
+          ? `/filing?quarter=${selectedQuarter}&view=review`
+          : `/filing?quarter=${selectedQuarter}&view=${taskView(step)}`,
       evidence:
         step === "confirm_extraction"
           ? records.map(({ id, original_filename, extraction_status }) => ({
@@ -476,11 +541,47 @@ export async function refreshAgenticPlan(): Promise<AgenticPlan> {
     rule: {
       id: DEMO_RULE_ID,
       version: DEMO_RULE_VERSION,
-      title: "Q2 2026 controlled demo liability",
+      title: `${quarter.period} illustrative six-percent liability`,
       sourceTitle: "eTaxPH controlled pilot fixture - not an official tax authority",
       status: "demo",
     },
     progress: Math.round((completedCount / agenticSteps.length) * 100),
+    period: {
+      quarter: selectedQuarter,
+      label: quarter.label,
+      shortLabel: quarter.shortLabel,
+      period: quarter.period,
+      opensOn: quarter.opensOn,
+      dueDate: quarter.dueDate,
+      formCode: quarter.formCode,
+      formTitle: quarter.formTitle,
+      isOpen: periodOpen,
+      lockedReason: periodOpen
+        ? null
+        : `${quarter.label} opens on ${quarter.opensOn}. You can preview the journey now.`,
+    },
+    obligation,
+    records,
+    payment: {
+      intentState: paymentIntent?.state ?? null,
+      approvalRecorded: Boolean(paymentIntent),
+      proofStored: paymentVerified,
+      amount: paymentIntent ? Number(paymentIntent.amount) : null,
+      currency: paymentIntent?.currency === "PHP" ? "PHP" : null,
+      reference: paymentProof?.reference ?? paymentIntent?.provider_reference ?? null,
+      proofFilename: paymentProof?.original_filename ?? null,
+    },
+    snapshotVersion: stableHash({
+      activeStep,
+      computationId: computation?.id ?? null,
+      draftId: draft?.id ?? null,
+      obligationStatus: obligation.status,
+      paymentIntentState: paymentIntent?.state ?? null,
+      paymentProofId: paymentProof?.id ?? null,
+      paymentStatus: obligation.payment_status,
+      period: quarter.period,
+      recordIds: records.map(({ id, updated_at }) => [id, updated_at]),
+    }),
   };
 }
 

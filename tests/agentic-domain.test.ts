@@ -33,11 +33,22 @@ test("the controlled demo computation is deterministic and traceable", () => {
   const second = computeDemoLiability(input);
 
   assert.deepEqual(first, second);
-  assert.equal(first.amountPayable, 7_440);
+  assert.equal(first.amountPayable, 7_500);
   assert.equal(first.ruleId, DEMO_RULE_ID);
   assert.equal(first.ruleVersion, DEMO_RULE_VERSION);
-  assert.ok(first.trace.some(({ label }) => label === "Demo fixed liability"));
+  assert.ok(first.trace.some(({ label }) => label === "Demo amount payable"));
   assert.ok(first.warnings[0].includes("tax professional"));
+});
+
+test("the illustrative six-percent rule rounds to PHP cents", () => {
+  const result = computeDemoLiability({
+    period: "Q1 2026",
+    totalIncome: 100.1,
+    recordIds: ["record-a"],
+  });
+
+  assert.equal(result.amountPayable, 6.01);
+  assert.ok(result.assumptions.some((assumption) => assumption.includes("6%")));
 });
 
 test("the same normalized input produces the same idempotency hash", () => {

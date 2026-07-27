@@ -8,9 +8,16 @@ import { appendAudit, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/data";
+import {
+  filingQuarters,
+  getQuarterMeta,
+  isFilingPeriodOpen,
+  parseFilingQuarter,
+  type FilingQuarter,
+} from "@/lib/filing-periods";
 
-function filingUrl(view: string, notice?: string) {
-  const params = new URLSearchParams({ quarter: "2", view });
+function filingUrl(quarter: FilingQuarter, view: string, notice?: string) {
+  const params = new URLSearchParams({ quarter: String(quarter), view });
 
   if (notice) {
     params.set("notice", notice);
@@ -19,14 +26,34 @@ function filingUrl(view: string, notice?: string) {
   return `/filing?${params.toString()}`;
 }
 
+function isChatCommand(formData: FormData) {
+  return formData.get("source") === "agentic-chat";
+}
+
 export async function confirmIncomeRecord(formData: FormData) {
   const user = await requireUser();
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
+  const allowedPeriods =
+    quarter === 4
+      ? filingQuarters.flatMap(({ period, periodAliases = [] }) => [period, ...periodAliases])
+      : [quarterMeta.period, ...(quarterMeta.periodAliases ?? [])];
   const amount = Number(String(formData.get("total_income") ?? "").replace(/,/g, ""));
 
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "This filing period has not opened yet." };
+    }
+    redirect(filingUrl(quarter, "records", "period-locked"));
+  }
+
   if (!id || !Number.isFinite(amount) || amount < 0) {
-    redirect(filingUrl("records", "invalid-record"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "Enter a valid confirmed amount." };
+    }
+    redirect(filingUrl(quarter, "records", "invalid-record"));
   }
 
   const { data, error } = await supabase
@@ -39,6 +66,7 @@ export async function confirmIncomeRecord(formData: FormData) {
     })
     .eq("id", id)
     .eq("user_id", user.id)
+    .in("period", allowedPeriods)
     .select("id, original_filename")
     .single();
 
@@ -55,18 +83,25 @@ export async function confirmIncomeRecord(formData: FormData) {
     targetId: data.id,
     eventData: { amount, filename: data.original_filename },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
-  redirect(filingUrl("records", "record-confirmed"));
+  if (isChatCommand(formData)) {
+    return { ok: true as const };
+  }
+  redirect(filingUrl(quarter, "records", "record-confirmed"));
 }
 
-export async function confirmComputationReview() {
+export async function confirmComputationReview(formData: FormData) {
   const user = await requireUser();
-  const plan = await refreshAgenticPlan();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const plan = await refreshAgenticPlan(quarter);
 
   if (plan.task.task_type !== "review_computation" || !plan.draft) {
-    redirect(filingUrl("review", "review-not-ready"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "The computation is not ready for review." };
+    }
+    redirect(filingUrl(quarter, "review", "review-not-ready"));
   }
 
   const supabase = await createClient();
@@ -90,25 +125,33 @@ export async function confirmComputationReview() {
     targetId: plan.draft.id,
     eventData: { computationRunId: plan.computation?.id, ruleId: plan.rule.id },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
-  redirect(filingUrl("handoff", "review-confirmed"));
+  if (isChatCommand(formData)) {
+    return { ok: true as const };
+  }
+  redirect(filingUrl(quarter, "handoff", "review-confirmed"));
 }
 
-export async function approveFilingHandoff() {
+export async function approveFilingHandoff(formData: FormData) {
   const user = await requireUser();
-  const plan = await refreshAgenticPlan();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
+  const plan = await refreshAgenticPlan(quarter);
 
   if (plan.task.task_type !== "approve_handoff" || !plan.draft || !plan.computation) {
-    redirect(filingUrl("handoff", "handoff-not-ready"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "The filing hand-off is not ready." };
+    }
+    redirect(filingUrl(quarter, "handoff", "handoff-not-ready"));
   }
 
   const payload = {
     amountPayable: plan.computation.output_snapshot.amountPayable,
     computationRunId: plan.computation.id,
     effect: "Prepare a guided official-channel filing hand-off; do not submit.",
-    form: "1701Q",
+    form: quarterMeta.formCode,
     period: plan.computation.input_snapshot.period,
     returnDraftId: plan.draft.id,
     ruleId: plan.rule.id,
@@ -145,24 +188,34 @@ export async function approveFilingHandoff() {
     targetId: plan.draft.id,
     eventData: { approvalId: approval.id, effect: payload.effect },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
-  redirect(filingUrl("handoff", "handoff-approved"));
+  if (isChatCommand(formData)) {
+    return { ok: true as const };
+  }
+  redirect(filingUrl(quarter, "handoff", "handoff-approved"));
 }
 
 export async function recordFilingAcknowledgement(formData: FormData) {
   const user = await requireUser();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
   const reference = String(formData.get("reference") ?? "").trim();
 
   if (!/^[A-Za-z0-9][A-Za-z0-9._/-]{5,79}$/.test(reference)) {
-    redirect(filingUrl("handoff", "invalid-acknowledgement"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "Enter a valid acknowledgement reference." };
+    }
+    redirect(filingUrl(quarter, "handoff", "invalid-acknowledgement"));
   }
 
-  const plan = await refreshAgenticPlan();
+  const plan = await refreshAgenticPlan(quarter);
 
   if (plan.task.task_type !== "capture_acknowledgement" || !plan.draft) {
-    redirect(filingUrl("handoff", "acknowledgement-not-ready"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "The acknowledgement step is not ready." };
+    }
+    redirect(filingUrl(quarter, "handoff", "acknowledgement-not-ready"));
   }
 
   const supabase = await createClient();
@@ -202,15 +255,19 @@ export async function recordFilingAcknowledgement(formData: FormData) {
     targetId: plan.draft.id,
     eventData: { reference },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
-  redirect(filingUrl("payment", "acknowledgement-recorded"));
+  if (isChatCommand(formData)) {
+    return { ok: true as const };
+  }
+  redirect(filingUrl(quarter, "payment", "acknowledgement-recorded"));
 }
 
 export async function uploadPaymentProof(formData: FormData) {
   const user = await requireUser();
-  const plan = await refreshAgenticPlan();
+  const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const plan = await refreshAgenticPlan(quarter);
   const file = formData.get("file");
   const reference = String(formData.get("reference") ?? "").trim();
 
@@ -220,13 +277,19 @@ export async function uploadPaymentProof(formData: FormData) {
     file.size === 0 ||
     !reference
   ) {
-    redirect(filingUrl("payment", "invalid-payment-proof"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "Add a payment reference and proof file." };
+    }
+    redirect(filingUrl(quarter, "payment", "invalid-payment-proof"));
   }
 
   const supported = file.type.startsWith("image/") || file.type === "application/pdf";
 
   if (!supported || file.size > 10 * 1024 * 1024) {
-    redirect(filingUrl("payment", "invalid-payment-proof"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "Use an image or PDF smaller than 10 MB." };
+    }
+    redirect(filingUrl(quarter, "payment", "invalid-payment-proof"));
   }
 
   const supabase = await createClient();
@@ -240,7 +303,10 @@ export async function uploadPaymentProof(formData: FormData) {
     .maybeSingle();
 
   if (!intent) {
-    redirect(filingUrl("payment", "payment-not-approved"));
+    if (isChatCommand(formData)) {
+      return { ok: false as const, error: "Approve the payment hand-off first." };
+    }
+    redirect(filingUrl(quarter, "payment", "payment-not-approved"));
   }
 
   const extension = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "") || "bin";
@@ -292,8 +358,11 @@ export async function uploadPaymentProof(formData: FormData) {
     targetId: intent.id,
     eventData: { filename: file.name, reference },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
-  redirect(filingUrl("payment", "payment-verified"));
+  if (isChatCommand(formData)) {
+    return { ok: true as const };
+  }
+  redirect(filingUrl(quarter, "payment", "payment-verified"));
 }

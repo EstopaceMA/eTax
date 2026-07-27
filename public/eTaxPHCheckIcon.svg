@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 76 72" role="img" aria-labelledby="title">
+  <title id="title">eTaxPH chatbot icon</title>
+  <rect x="6" y="4" width="64" height="64" rx="16" fill="#5EC16A"/>
+  <path d="M25 22h26a7 7 0 0 1 7 7v14a7 7 0 0 1-7 7H39l-7 6v-6h-7a7 7 0 0 1-7-7V29a7 7 0 0 1 7-7Z"
+        fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="30" cy="35" r="2" fill="#fff"/>
+  <circle cx="46" cy="35" r="2" fill="#fff"/>
+  <path d="M31 42c4 3 10 3 14 0" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+</svg>

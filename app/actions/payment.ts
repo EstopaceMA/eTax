@@ -47,10 +47,9 @@ export async function createEgovPayCheckout(formData: FormData) {
       throw new Error("The selected filing period is not open.");
     }
 
-    const plan = await refreshAgenticPlan();
+    const plan = await refreshAgenticPlan(quarter);
 
     if (
-      quarter !== 2 ||
       plan.task.task_type !== "approve_payment" ||
       !plan.computation ||
       !plan.draft?.acknowledgement_reference

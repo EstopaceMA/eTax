@@ -22,6 +22,26 @@ import { buttonClass } from "@/components/ui/button";
 import type { AgentTask, AgenticPlan } from "@/lib/agentic/types";
 import type { IncomeRecordUpload } from "@/lib/types";
 
+async function confirmIncomeRecordFormAction(formData: FormData) {
+  await confirmIncomeRecord(formData);
+}
+
+async function confirmComputationFormAction(formData: FormData) {
+  await confirmComputationReview(formData);
+}
+
+async function approveHandoffFormAction(formData: FormData) {
+  await approveFilingHandoff(formData);
+}
+
+async function acknowledgementFormAction(formData: FormData) {
+  await recordFilingAcknowledgement(formData);
+}
+
+async function paymentProofFormAction(formData: FormData) {
+  await uploadPaymentProof(formData);
+}
+
 function PendingButton({
   children,
   pendingLabel,
@@ -89,10 +109,17 @@ export function JourneyProgress({ tasks }: { tasks: AgentTask[] }) {
   );
 }
 
-export function ConfirmIncomeRecordForm({ record }: { record: IncomeRecordUpload }) {
+export function ConfirmIncomeRecordForm({
+  quarter,
+  record,
+}: {
+  quarter: number;
+  record: IncomeRecordUpload;
+}) {
   return (
-    <form action={confirmIncomeRecord} className="grid gap-2">
+    <form action={confirmIncomeRecordFormAction} className="grid gap-2">
       <input name="id" type="hidden" value={record.id} />
+      <input name="quarter" type="hidden" value={quarter} />
       <label className="text-xs font-bold uppercase text-grey-500" htmlFor={`confirm-${record.id}`}>
         Confirmed amount
       </label>
@@ -114,9 +141,10 @@ export function ConfirmIncomeRecordForm({ record }: { record: IncomeRecordUpload
   );
 }
 
-export function ConfirmComputationForm() {
+export function ConfirmComputationForm({ quarter }: { quarter: number }) {
   return (
-    <form action={confirmComputationReview}>
+    <form action={confirmComputationFormAction}>
+      <input name="quarter" type="hidden" value={quarter} />
       <PendingButton pendingLabel="Saving review...">
         <FileCheck2 aria-hidden size={18} />
         I reviewed this demo computation
@@ -125,9 +153,10 @@ export function ConfirmComputationForm() {
   );
 }
 
-export function ApproveHandoffForm() {
+export function ApproveHandoffForm({ quarter }: { quarter: number }) {
   return (
-    <form action={approveFilingHandoff}>
+    <form action={approveHandoffFormAction}>
+      <input name="quarter" type="hidden" value={quarter} />
       <PendingButton pendingLabel="Recording approval...">
         <ShieldCheck aria-hidden size={18} />
         Approve exact hand-off
@@ -136,9 +165,10 @@ export function ApproveHandoffForm() {
   );
 }
 
-export function FilingAcknowledgementForm() {
+export function FilingAcknowledgementForm({ quarter }: { quarter: number }) {
   return (
-    <form action={recordFilingAcknowledgement} className="grid gap-3">
+    <form action={acknowledgementFormAction} className="grid gap-3">
+      <input name="quarter" type="hidden" value={quarter} />
       <label className="grid gap-2 text-sm font-bold text-grey-800">
         Acknowledgement reference
         <input
@@ -157,9 +187,10 @@ export function FilingAcknowledgementForm() {
   );
 }
 
-export function PaymentProofForm() {
+export function PaymentProofForm({ quarter }: { quarter: number }) {
   return (
-    <form action={uploadPaymentProof} className="grid gap-3">
+    <form action={paymentProofFormAction} className="grid gap-3">
+      <input name="quarter" type="hidden" value={quarter} />
       <label className="grid gap-2 text-sm font-bold text-grey-800">
         Payment reference
         <input

@@ -77,12 +77,14 @@ export type IncomeRecordUpload = {
   storage_path: string;
   content_type: string | null;
   size_bytes: number | null;
+  content_hash?: string | null;
   total_income: number | null;
   extraction_status: "provisional" | "confirmed" | "needs_review";
   extraction_confidence: number | null;
   extracted_text: string | null;
   confirmed_at: string | null;
   created_at: string;
+  updated_at?: string;
   signed_url?: string;
 };
 

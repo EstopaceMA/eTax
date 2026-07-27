@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Bot, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ChatbotIcon } from "@/components/chatbot-icon";
 import { buttonClass } from "@/components/ui/button";
 import type { AgenticPlan } from "@/lib/agentic/types";
 
@@ -12,7 +13,7 @@ export function NextAction({ plan }: { plan: AgenticPlan }) {
       <div className="p-4 md:p-5">
         <div className="flex items-center justify-between gap-3">
           <p className="flex items-center gap-2 text-xs font-bold uppercase text-primary-700">
-            <Bot aria-hidden size={16} />
+            <ChatbotIcon size={20} />
             {isComplete ? "Journey complete" : "Next action"}
           </p>
           <span className="text-sm font-extrabold text-grey-900">{plan.progress}%</span>

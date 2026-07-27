@@ -153,7 +153,7 @@ export function IncomeRecordTotalForm({
       <input name="quarter" type="hidden" value={quarter} />
       <input name="storage_path" type="hidden" value={storagePath} />
       <label
-        className="self-center text-xs font-bold uppercase text-grey-500"
+        className="self-center text-xs font-bold uppercase text-grey-500 sm:col-span-2"
         htmlFor={inputId}
       >
         Total income
@@ -170,7 +170,7 @@ export function IncomeRecordTotalForm({
       />
       <SubmitButton
         ariaLabel="Save total income"
-        className="min-h-10 w-full px-3 sm:col-start-2"
+        className="min-h-10 w-full px-3 sm:col-start-2 sm:row-start-3"
         pendingLabel="Saving..."
         variant="secondary"
       >
@@ -195,7 +195,7 @@ export function DeleteIncomeRecordForm({
   return (
     <form
       action={deleteIncomeRecord}
-      className="w-full"
+      className="w-full sm:col-start-1 sm:row-start-3"
       onSubmit={(event) => {
         const shouldDelete = window.confirm(`Delete "${filename}" from this filing period?`);
 

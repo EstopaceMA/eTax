@@ -89,19 +89,19 @@ Always pair semantic colors with text labels or icons. Do not rely on color alon
 
 Use Minimals typography defaults:
 
-- Primary font: `Public Sans`.
-- Display/accent font: `Barlow`.
+- Primary font: `Inter`.
+- Display/accent font: `Inter`.
 - Fallback: `Helvetica, Arial, sans-serif`.
 
 ### Type Roles
 
 | Role | Font | Weight | Usage |
 | --- | --- | --- | --- |
-| Page title | Public Sans | 700-800 | Dashboard and major page headings. |
-| Section heading | Public Sans | 700 | Cards, panels, grouped content. |
-| Body | Public Sans | 400-500 | Instructions, descriptions, table text. |
-| Label | Public Sans | 600 | Form labels, status labels, chips. |
-| Metric display | Barlow | 900 | Large progress numbers or key deadline counts only. |
+| Page title | Inter | 700-800 | Dashboard and major page headings. |
+| Section heading | Inter | 700 | Cards, panels, grouped content. |
+| Body | Inter | 400-500 | Instructions, descriptions, table text. |
+| Label | Inter | 600 | Form labels, status labels, chips. |
+| Metric display | Inter | 900 | Large progress numbers or key deadline counts only. |
 
 ### Copy Rules
 
@@ -321,8 +321,7 @@ Avoid decorative animation in tax workflows.
 - Prefer Material UI components and theme overrides.
 - Keep tokens centralized in a theme file.
 - Use CSS variables for palette values if the stack supports theme switching.
-- Use `Public Sans` for the app shell and content.
-- Use `Barlow` only for high-emphasis metric displays.
+- Use `Inter` for the app shell, content, and high-emphasis metric displays.
 - Keep page sections unframed; use cards only for repeated objects or modals.
 - Use filing tracker actions as in-product steps with clear status outcomes.
 

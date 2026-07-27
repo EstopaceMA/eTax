@@ -7,9 +7,55 @@ import { findEtaxHelpDocuments } from "@/lib/assistant/knowledge";
 import { generateEgovAssistantResponse } from "@/lib/egov/ai-assistant";
 import { createClient } from "@/lib/supabase/server";
 import { ensureWorkspace, getWorkspaceData } from "@/lib/data";
-import { getAgenticPlan } from "@/lib/agentic/orchestrator";
+import { getAgenticPlan, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
+import {
+  buildAgenticDataAnswer,
+  buildAgenticSnapshot,
+  classifyAgenticChatRequest,
+  isAgenticAnswerTopic,
+  quarterFromAgenticRequest,
+} from "@/lib/agentic/presentation";
+import type { FilingQuarter } from "@/lib/filing-periods";
+import type { AgenticChatHistoryItem } from "@/lib/agentic/types";
 
 const maxQuestionLength = 1_500;
+const maxAgenticHistoryItems = 6;
+const maxAgenticHistoryLength = 500;
+
+function parseAgenticHistory(value: unknown): AgenticChatHistoryItem[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.slice(-maxAgenticHistoryItems).flatMap((item) => {
+    if (
+      typeof item !== "object" ||
+      item === null ||
+      !("role" in item) ||
+      (item.role !== "agent" && item.role !== "user") ||
+      !("content" in item) ||
+      typeof item.content !== "string"
+    ) {
+      return [];
+    }
+
+    const content = item.content.trim().slice(0, maxAgenticHistoryLength);
+
+    if (!content) {
+      return [];
+    }
+
+    return [
+      {
+        role: item.role,
+        content,
+        ...("topic" in item && isAgenticAnswerTopic(item.topic)
+          ? { topic: item.topic }
+          : {}),
+      },
+    ];
+  });
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -39,6 +85,24 @@ export async function POST(request: Request) {
     typeof body.question === "string"
       ? body.question.trim()
       : "";
+  const requestedMode =
+    typeof body === "object" &&
+    body !== null &&
+    "mode" in body &&
+    body.mode === "agentic"
+      ? "agentic"
+      : "ask";
+  const requestedQuarter =
+    typeof body === "object" &&
+    body !== null &&
+    "quarter" in body &&
+    (body.quarter === 1 || body.quarter === 2 || body.quarter === 3 || body.quarter === 4)
+      ? (body.quarter as FilingQuarter)
+      : 2;
+  const recentHistory =
+    typeof body === "object" && body !== null && "history" in body
+      ? parseAgenticHistory(body.history)
+      : [];
 
   if (!question) {
     return NextResponse.json({ error: "Enter a question first." }, { status: 400 });
@@ -52,6 +116,49 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (requestedMode === "agentic") {
+      const intent = classifyAgenticChatRequest(question, recentHistory);
+
+      if (intent.kind === "switch_to_ask") {
+        return NextResponse.json({
+          answer:
+            "That sounds like a tax question rather than a filing task. Switch to Ask eTax for an explanation.",
+          kind: "switch_to_ask",
+          mode: "agentic",
+          switchToAsk: true,
+        });
+      }
+
+      await ensureWorkspace();
+      const inferredQuarter = quarterFromAgenticRequest(question) as FilingQuarter | null;
+      const plan = await refreshAgenticPlan(inferredQuarter ?? requestedQuarter);
+      const snapshot = buildAgenticSnapshot(plan);
+
+      if (intent.kind === "data") {
+        return NextResponse.json({
+          ...snapshot,
+          ...buildAgenticDataAnswer(plan, intent.topic),
+          kind: "data",
+        });
+      }
+
+      if (intent.kind === "courtesy") {
+        return NextResponse.json({
+          ...snapshot,
+          kind: "workflow",
+          narration:
+            plan.progress === 100
+              ? "You’re welcome. This filing journey is complete, and its verified records remain available above."
+              : `You’re welcome. Your progress for ${plan.period.period} is preserved whenever you’re ready to continue.`,
+        });
+      }
+
+      return NextResponse.json({
+        ...snapshot,
+        kind: "workflow",
+      });
+    }
+
     const mode = isEtaxAppQuestion(question) ? "etax-app" : "ph-tax";
     const documents = mode === "etax-app" ? await findEtaxHelpDocuments(question, 2) : [];
     await ensureWorkspace();
@@ -81,10 +188,10 @@ export async function POST(request: Request) {
             }
           : null,
         filingStatus: workspace.filingObligations.find(
-          ({ period }) => period === "Q2 2026",
+          ({ period }) => period === plan.period.period,
         )?.status,
         paymentStatus: workspace.filingObligations.find(
-          ({ period }) => period === "Q2 2026",
+          ({ period }) => period === plan.period.period,
         )?.payment_status,
         progress: plan.progress,
         taxpayerClass: workspace.taxpayerProfile?.taxpayer_type,

@@ -1,4 +1,6 @@
 import type { AgentTaskState, AgenticStep } from "@/lib/agentic/domain";
+import type { FilingQuarter } from "@/lib/filing-periods";
+import type { FilingObligation, IncomeRecordUpload } from "@/lib/types";
 
 export type AgentTask = {
   id: string;
@@ -75,4 +77,98 @@ export type AgenticPlan = {
     status: "demo";
   };
   progress: number;
+  period: {
+    quarter: FilingQuarter;
+    label: string;
+    shortLabel: string;
+    period: string;
+    opensOn: string;
+    dueDate: string;
+    formCode: "1701Q" | "1701A";
+    formTitle: string;
+    isOpen: boolean;
+    lockedReason: string | null;
+  };
+  obligation: FilingObligation;
+  records: IncomeRecordUpload[];
+  payment: {
+    intentState: string | null;
+    approvalRecorded: boolean;
+    proofStored: boolean;
+    amount: number | null;
+    currency: "PHP" | null;
+    reference: string | null;
+    proofFilename: string | null;
+  };
+  snapshotVersion: string;
 };
+
+export type AgenticBlock =
+  | { type: "locked_period"; opensOn: string; reason: string }
+  | { type: "record_upload" }
+  | { type: "record_confirmation"; recordIds: string[] }
+  | { type: "computation_review" }
+  | { type: "filing_approval" }
+  | { type: "filing_acknowledgement" }
+  | { type: "payment_approval" }
+  | { type: "payment_proof" }
+  | { type: "exception"; message: string };
+
+export type AgenticStage = "records" | "review" | "handoff" | "payment";
+export type AgenticStageState = "completed" | "active" | "locked" | "exception";
+
+export type AgenticTimelineItem = {
+  id: AgenticStage;
+  stage: AgenticStage;
+  state: AgenticStageState;
+  title: string;
+  narration: string;
+  summary: Array<{ label: string; value: string }>;
+  block: AgenticBlock | null;
+};
+
+export type AgenticSnapshotResponse = {
+  narration: string;
+  blocks: AgenticBlock[];
+  timeline: AgenticTimelineItem[];
+  plan: AgenticPlan;
+  snapshotVersion: string;
+};
+
+export type AgenticAnswerTopic =
+  | "summary"
+  | "records"
+  | "computation"
+  | "deadline"
+  | "filing"
+  | "payment"
+  | "blocker"
+  | "next_step";
+
+export type AgenticAnswerFact = {
+  label: string;
+  value: string;
+};
+
+export type AgenticChatHistoryItem = {
+  role: "agent" | "user";
+  content: string;
+  topic?: AgenticAnswerTopic;
+};
+
+export type AgenticChatResponse =
+  | (AgenticSnapshotResponse & {
+      kind: "workflow";
+    })
+  | (AgenticSnapshotResponse & {
+      kind: "data";
+      answer: string;
+      facts: AgenticAnswerFact[];
+      sourcePeriod: string;
+      topic: AgenticAnswerTopic;
+    })
+  | {
+      kind: "switch_to_ask";
+      answer: string;
+      switchToAsk: true;
+    };

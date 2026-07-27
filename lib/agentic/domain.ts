@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
-export const DEMO_RULE_ID = "demo-fixed-liability-q2-2026";
-export const DEMO_RULE_VERSION = "demo-2026.07.1";
-export const DEMO_TAX_AMOUNT = 7_440;
+export const DEMO_RULE_ID = "demo-gross-income-six-percent-2026";
+export const DEMO_RULE_VERSION = "demo-2026.07.2";
+export const DEMO_TAX_RATE = 0.06;
 
 export const agenticSteps = [
   "collect_records",
@@ -59,13 +59,16 @@ export function stableHash(value: unknown) {
 }
 
 export function computeDemoLiability(input: DemoComputationInput): DemoComputation {
+  const amountPayable = Math.round(input.totalIncome * DEMO_TAX_RATE * 100) / 100;
+
   return {
-    amountPayable: DEMO_TAX_AMOUNT,
+    amountPayable,
     currency: "PHP",
     ruleId: DEMO_RULE_ID,
     ruleVersion: DEMO_RULE_VERSION,
     assumptions: [
-      "This controlled pilot uses a fixed Q2 2026 demo liability.",
+      "This controlled pilot applies an illustrative 6% rate to confirmed recorded income.",
+      "No deductions, credits, prior payments, penalties, or other tax adjustments are applied.",
       "The result is not a production tax calculation or an official BIR assessment.",
     ],
     warnings: [
@@ -75,7 +78,8 @@ export function computeDemoLiability(input: DemoComputationInput): DemoComputati
       { label: "Covered period", value: input.period },
       { label: "Confirmed income records", value: input.recordIds.length },
       { label: "Recorded income", value: input.totalIncome },
-      { label: "Demo fixed liability", value: DEMO_TAX_AMOUNT },
+      { label: "Illustrative rate", value: "6%" },
+      { label: "Demo amount payable", value: amountPayable },
       { label: "Rounding", value: "PHP, 2 decimal places" },
     ],
   };

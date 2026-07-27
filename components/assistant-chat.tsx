@@ -1,11 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
-  Headphones,
   LoaderCircle,
-  MessageCircleQuestion,
   RotateCcw,
   Send,
   X,
@@ -18,6 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { ChatbotIcon } from "@/components/chatbot-icon";
 
 type Message = {
   id: string;
@@ -58,48 +56,21 @@ function newMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function AssistantChat() {
+export function AssistantChat({ onClose }: { onClose?: () => void }) {
   const titleId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
     inputRef.current?.focus();
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [isOpen, isSending, messages]);
-
-  useEffect(() => {
-    function closeOnEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    }
-
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
 
   useEffect(() => {
-    function openFromNav() {
-      setIsOpen(true);
-    }
-
-    window.addEventListener("etax:open-assistant", openFromNav);
-    return () => window.removeEventListener("etax:open-assistant", openFromNav);
-  }, []);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [isSending, messages]);
 
   async function sendQuestion(value: string) {
     const trimmedQuestion = value.trim();
@@ -185,39 +156,12 @@ export function AssistantChat() {
     inputRef.current?.focus();
   }
 
-  if (!isOpen) {
-    return (
-      <button
-        aria-label="Open eTax AI Assistant"
-        className="group fixed bottom-7 right-7 z-50 hidden size-16 items-center justify-center overflow-visible rounded-full border border-white/20 bg-grey-900 shadow-[0_14px_35px_rgba(20,26,33,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(20,26,33,0.34)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 lg:flex"
-        onClick={() => setIsOpen(true)}
-        type="button"
-      >
-        <Image
-          alt=""
-          className="size-14 object-contain"
-          height={56}
-          src="/eTaxLogo.png"
-          width={56}
-        />
-        <span className="absolute -right-2 -top-2 grid size-8 place-items-center rounded-full border-2 border-white bg-primary-500 text-white shadow-md transition group-hover:bg-primary-700">
-          <Headphones aria-hidden="true" className="size-4" strokeWidth={2.4} />
-        </span>
-      </button>
-    );
-  }
-
   return (
-    <section
-      aria-labelledby={titleId}
-      aria-modal="false"
-      className="fixed inset-x-3 bottom-24 z-50 flex h-[min(620px,calc(100dvh-112px))] flex-col overflow-hidden rounded-lg border border-grey-300 bg-white shadow-[0_24px_70px_rgba(20,26,33,0.24)] sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[600px] sm:w-[390px]"
-      role="dialog"
-    >
-      <header className="flex h-[72px] shrink-0 items-center gap-3 border-b border-grey-300 bg-grey-900 px-4 text-white">
-        <div className="relative grid size-10 shrink-0 place-items-center rounded-full bg-white/10">
-          <MessageCircleQuestion aria-hidden="true" className="size-5 text-primary-300" />
-          <span className="absolute bottom-1 right-1 size-2 rounded-full border border-grey-900 bg-success-500" />
+    <div className="flex min-h-0 flex-1 flex-col" aria-labelledby={titleId}>
+      <header className="flex min-h-[68px] shrink-0 items-center gap-3 border-b border-grey-300 bg-surface-inverse px-4 text-white">
+        <div className="relative grid size-10 shrink-0 place-items-center rounded-lg bg-white shadow-sm">
+          <ChatbotIcon size={34} />
+          <span className="absolute bottom-0 right-0 size-2 rounded-full border border-surface-inverse bg-success-500" />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-bold" id={titleId}>
@@ -234,15 +178,17 @@ export function AssistantChat() {
         >
           <RotateCcw aria-hidden="true" className="size-4" />
         </button>
-        <button
-          aria-label="Close eTax AI Assistant"
-          className="grid size-10 shrink-0 place-items-center rounded-full text-grey-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-300"
-          onClick={() => setIsOpen(false)}
-          title="Close"
-          type="button"
-        >
-          <X aria-hidden="true" className="size-5" />
-        </button>
+        {onClose ? (
+          <button
+            aria-label="Close eTax AI Assistant"
+            className="grid size-10 shrink-0 place-items-center rounded-full text-grey-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-300"
+            onClick={onClose}
+            title="Close"
+            type="button"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+        ) : null}
       </header>
 
       <div
@@ -291,7 +237,7 @@ export function AssistantChat() {
                   <Link
                     className="mt-3 inline-flex min-h-10 items-center rounded-lg bg-primary-500 px-3 text-xs font-bold text-white transition hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
                     href={message.nextAction.href}
-                    onClick={() => setIsOpen(false)}
+                    onClick={onClose}
                   >
                     {message.nextAction.label}
                   </Link>
@@ -361,6 +307,6 @@ export function AssistantChat() {
           Review important tax decisions with current BIR guidance.
         </p>
       </form>
-    </section>
+    </div>
   );
 }

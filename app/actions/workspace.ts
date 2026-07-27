@@ -2,13 +2,18 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "@/lib/data";
 import { extractInvoiceTotalFromDocument } from "@/lib/egov/document-extractor";
 import { appendAudit, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
-import { getPeriodSlug, getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
+import {
+  getPeriodSlug,
+  getQuarterMeta,
+  isFilingPeriodOpen,
+  parseFilingQuarter,
+} from "@/lib/filing-periods";
 import type { FilingQuarter } from "@/lib/filing-periods";
 import type { ChecklistStatus, FilingStatus, PaymentStatus } from "@/lib/types";
 
@@ -126,6 +131,10 @@ export async function uploadIncomeRecord(formData: FormData) {
   const quarterMeta = getQuarterMeta(quarter);
   const file = formData.get("file");
 
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
+
   if (!(file instanceof File) || file.size === 0) {
     return;
   }
@@ -146,6 +155,7 @@ export async function uploadIncomeRecord(formData: FormData) {
     .slice(0, 48);
   const storagePath = `${user.id}/${getPeriodSlug(quarterMeta.period)}/${randomUUID()}-${safeFilename || "income-record"}.${extension}`;
   const uploadBody = Buffer.from(await file.arrayBuffer());
+  const contentHash = createHash("sha256").update(uploadBody).digest("hex");
   let extractedTotalIncome: number | null = null;
   let extractedText: string | null = null;
 
@@ -191,6 +201,7 @@ export async function uploadIncomeRecord(formData: FormData) {
     storage_path: storagePath,
     content_type: file.type,
     size_bytes: file.size,
+    content_hash: contentHash,
     total_income: extractedTotalIncome,
     extraction_status: extractedTotalIncome === null ? "needs_review" : "provisional",
     extraction_confidence: extractedTotalIncome === null ? null : 0.75,
@@ -237,7 +248,7 @@ export async function uploadIncomeRecord(formData: FormData) {
       period: quarterMeta.period,
     },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
 }
@@ -248,8 +259,13 @@ export async function updateIncomeRecordTotal(formData: FormData) {
   const adminSupabase = createAdminClient();
   const id = String(formData.get("id"));
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
   const storagePath = String(formData.get("storage_path") ?? "");
   const rawTotalIncome = String(formData.get("total_income") ?? "").trim();
+
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
 
   if (await blockLockedRecordChange(supabase, user.id, quarter, id)) {
     revalidatePath("/filing");
@@ -316,7 +332,7 @@ export async function updateIncomeRecordTotal(formData: FormData) {
     targetId: id,
     eventData: { totalIncome, verificationState: "provisional" },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
 }
@@ -327,10 +343,15 @@ export async function deleteIncomeRecord(formData: FormData) {
   const adminSupabase = createAdminClient();
   const id = String(formData.get("id"));
   const quarter = parseFilingQuarter(String(formData.get("quarter")));
+  const quarterMeta = getQuarterMeta(quarter);
   const storagePath = String(formData.get("storage_path") ?? "");
   const isUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   const isOwnStoragePath = storagePath.startsWith(`${user.id}/`);
+
+  if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
+    throw new Error("This filing period has not opened yet.");
+  }
 
   if (await blockLockedRecordChange(supabase, user.id, quarter, id)) {
     revalidatePath("/filing");
@@ -375,7 +396,7 @@ export async function deleteIncomeRecord(formData: FormData) {
     targetId: id,
     eventData: { storagePath },
   });
-  await refreshAgenticPlan();
+  await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
   revalidatePath("/dashboard");

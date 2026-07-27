@@ -63,7 +63,7 @@ export default async function DashboardPage() {
             before filing.
           </p>
         </div>
-        <Link className={`${buttonClass("secondary")} w-full md:w-auto`} href="/filing?quarter=2&view=records">
+        <Link className={`${buttonClass("secondary")} w-full md:w-auto`} href={`/filing?quarter=${plan.period.quarter}&view=records`}>
           Upload income records
         </Link>
       </div>
@@ -120,7 +120,7 @@ export default async function DashboardPage() {
                 Uploaded images and saved totals for the active filing period.
               </p>
             </div>
-            <Link className="text-sm font-bold text-primary-700" href="/filing?quarter=2&view=records">
+            <Link className="text-sm font-bold text-primary-700" href={`/filing?quarter=${plan.period.quarter}&view=records`}>
               Manage
             </Link>
           </div>

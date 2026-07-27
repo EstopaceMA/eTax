@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">eTaxPH chatbot icon</title>
+  <defs>
+    <linearGradient id="outerBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1685ff"/>
+      <stop offset="1" stop-color="#0062db"/>
+    </linearGradient>
+    <linearGradient id="innerBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123f92"/>
+      <stop offset="1" stop-color="#062c73"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd438"/>
+      <stop offset="1" stop-color="#f5b800"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="76" y="120" width="360" height="272" rx="94" fill="url(#outerBlue)"/>
+  <rect x="110" y="154" width="292" height="204" rx="68" fill="url(#innerBlue)"/>
+
+  <circle cx="190" cy="237" r="20" fill="#fff"/>
+  <circle cx="322" cy="237" r="20" fill="#fff"/>
+  <path d="M226 286c18 18 42 18 60 0" fill="none" stroke="#84d8ff" stroke-width="14" stroke-linecap="round"/>
+
+  <g fill="url(#gold)">
+    <rect x="350" y="282" width="22" height="98" rx="11"/>
+    <path d="M361 292h38c31 0 46 13 46 35s-15 35-46 35h-38v-20h38c17 0 24-5 24-15s-7-15-24-15h-38z"/>
+    <rect x="337" y="319" width="92" height="12" rx="6"/>
+    <rect x="337" y="340" width="85" height="12" rx="6"/>
+  </g>
+</svg>

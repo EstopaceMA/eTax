@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { DesktopNav, MobileNav } from "@/components/app-nav";
 import { BrandLogo } from "@/components/brand-logo";
-import { AssistantChat } from "@/components/assistant-chat";
+import { AssistantShell } from "@/components/assistant-shell";
 
 function getGreetingName({
   profileName,
@@ -80,12 +80,12 @@ export default async function ProtectedLayout({
             </Link>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-3 pb-24 pt-4 md:px-5 md:pb-8 md:pt-5">
+        <main className="protected-main mx-auto max-w-6xl px-3 pb-24 pt-4 md:px-5 md:pb-8 md:pt-5">
           {children}
         </main>
       </div>
       <MobileNav />
-      <AssistantChat />
+      <AssistantShell />
     </div>
   );
 }

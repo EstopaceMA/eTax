@@ -77,7 +77,7 @@ const notices: Record<string, string> = {
   "review-confirmed": "Your review is saved. The exact filing hand-off is ready for approval.",
   "handoff-approved": "The hand-off was approved. Add the official-channel acknowledgement after filing.",
   "acknowledgement-recorded": "Filing acknowledgement saved. Payment now requires separate approval.",
-  "payment-verified": "Payment proof saved. The controlled Q2 journey is complete.",
+  "payment-verified": "Payment proof saved. The controlled filing journey is complete.",
   "record-locked": "This record is part of a handed-off return. The change was blocked and an exception was opened.",
 };
 
@@ -102,7 +102,7 @@ export default async function FilingPage({
   const selectedMeta =
     filingQuarters.find(({ quarter }) => quarter === selectedQuarter) ?? filingQuarters[1];
   const selectedView = parseFilingView(params?.view);
-  const plan = await getAgenticPlan();
+  const plan = await getAgenticPlan(selectedQuarter);
   const obligations = filingQuarters.map((quarter) => ({
     ...quarter,
     obligation: data.filingObligations.find(({ period }) =>
@@ -115,7 +115,6 @@ export default async function FilingPage({
   const selectedRecords = data.incomeRecordUploads.filter((record) =>
     [selectedMeta.period, ...(selectedMeta.periodAliases ?? [])].includes(record.period),
   );
-  const isPilotQuarter = selectedQuarter === 2;
   const pdfUrl = `/api/filing/pdf?quarter=${selectedQuarter}`;
   const notice = params?.notice ? notices[params.notice] : null;
   const paymentReturned = params?.payment === "proof-required";
@@ -188,7 +187,7 @@ export default async function FilingPage({
         </div>
       </div>
 
-      {isPilotQuarter ? (
+      {plan.period.isOpen ? (
         <>
           <JourneyProgress tasks={plan.tasks} />
           <AgentPlanSummary plan={plan} />
@@ -196,7 +195,7 @@ export default async function FilingPage({
       ) : (
         <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4 text-sm text-grey-700">
           <AlertTriangle aria-hidden className="mt-0.5 shrink-0 text-warning-500" size={18} />
-          The controlled agentic pilot is available for the 2nd Quarter workspace.
+          {plan.period.lockedReason}
         </div>
       )}
 
@@ -304,7 +303,7 @@ export default async function FilingPage({
                     Verified evidence
                   </div>
                 ) : (
-                  <ConfirmIncomeRecordForm record={record} />
+                  <ConfirmIncomeRecordForm quarter={selectedQuarter} record={record} />
                 )}
               </article>
             ))}
@@ -326,7 +325,7 @@ export default async function FilingPage({
                   Demo computation
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-grey-900">
-                  Q2 return review
+                  {selectedMeta.period} return review
                 </h2>
               </div>
               <span className="rounded-full bg-warning-500/10 px-3 py-1 text-xs font-bold text-grey-800">
@@ -338,7 +337,7 @@ export default async function FilingPage({
                 <dl className="grid gap-3 sm:grid-cols-2">
                   {[
                     ["Period", plan.computation.input_snapshot.period],
-                    ["Form", "BIR Form 1701Q"],
+                    ["Form", `BIR Form ${selectedMeta.formCode}`],
                     ["Confirmed records", String(plan.computation.input_snapshot.recordIds.length)],
                     ["Recorded income", money(plan.computation.input_snapshot.totalIncome)],
                     ["Amount payable", money(plan.computation.output_snapshot.amountPayable)],
@@ -376,7 +375,9 @@ export default async function FilingPage({
                     </p>
                   ))}
                 </div>
-                {activeTask === "review_computation" ? <ConfirmComputationForm /> : null}
+                {activeTask === "review_computation" ? (
+                  <ConfirmComputationForm quarter={selectedQuarter} />
+                ) : null}
               </>
             ) : (
               <p className="border border-dashed border-grey-300 p-4 text-sm text-grey-600">
@@ -436,16 +437,16 @@ export default async function FilingPage({
           {activeTask === "approve_handoff" ? (
             <div className="border-t border-grey-300 pt-5">
               <p className="mb-3 text-sm leading-6 text-grey-700">
-                I approve this exact Q2 2026 return snapshot for guided hand-off. This approval
+                I approve this exact {selectedMeta.period} return snapshot for guided hand-off. This approval
                 does not authorize payment.
               </p>
-              <ApproveHandoffForm />
+              <ApproveHandoffForm quarter={selectedQuarter} />
             </div>
           ) : null}
           {activeTask === "capture_acknowledgement" ? (
             <div className="border-t border-grey-300 pt-5">
               <h3 className="mb-3 font-extrabold text-grey-900">Preserve filing evidence</h3>
-              <FilingAcknowledgementForm />
+              <FilingAcknowledgementForm quarter={selectedQuarter} />
             </div>
           ) : null}
           {plan.draft?.acknowledgement_reference ? (
@@ -510,7 +511,7 @@ export default async function FilingPage({
               </div>
             ) : null}
             {activeTask === "capture_payment_proof" && plan.progress < 100 ? (
-              <PaymentProofForm />
+              <PaymentProofForm quarter={selectedQuarter} />
             ) : null}
             {plan.progress === 100 ? (
               <div className="flex items-start gap-3 bg-success-500/10 p-4">
