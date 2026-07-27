@@ -1,0 +1,42 @@
+{
+  "year": "2025",
+  "quarter": 1,
+  "amendedReturn": false,
+  "identity": {
+    "tin": "123456789",
+    "rdoCode": "039",
+    "taxpayerType": "professional",
+    "atc": "II017",
+    "registeredName": "DELA CRUZ, JUAN PEDRO",
+    "registeredAddress": "123 SAMPAGUITA ST., BRGY. MALINIS, QUEZON CITY",
+    "registeredAddressLine2": "",
+    "zipCode": "1100",
+    "dateOfBirth": "01/15/1990",
+    "email": "JUAN.DELACRUZ@EXAMPLE.COM",
+    "citizenship": "FILIPINO",
+    "claimingForeignTaxCredits": false
+  },
+  "scheduleII": {
+    "salesRevenuesReceiptsFees": 450000,
+    "nonOperatingIncome": 5000,
+    "totalIncomeThisQuarter": 455000,
+    "taxableIncomePreviousQuarters": 300000,
+    "cumulativeTaxableIncome": 755000,
+    "allowableReduction": 250000,
+    "taxableIncomeToDate": 505000,
+    "taxDue": 40400
+  },
+  "scheduleIII": {
+    "priorYearsExcessCredits": 0,
+    "taxPaymentsPreviousQuarters": 4000,
+    "creditableTaxWithheldPreviousQuarters": 0,
+    "creditableTaxWithheld2307ThisQuarter": 2500,
+    "taxPaidReturnPreviouslyFiled": 0,
+    "foreignTaxCredits": 0,
+    "otherTaxCreditsPayments": 0,
+    "totalTaxCreditsPayments": 6500
+  },
+  "taxPayable": 33900,
+  "totalAmountPayable": 33900,
+  "signatureName": "JUAN PEDRO DELA CRUZ"
+}

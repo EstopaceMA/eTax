@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   CreditCard,
-  Download,
   FileCheck2,
   FileText,
   ShieldCheck,
@@ -21,13 +20,13 @@ import {
   PaymentProofForm,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
+import { PdfDownloadOptions } from "@/components/pdf-download-options";
 import {
   DeleteIncomeRecordForm,
   IncomeRecordTotalForm,
   IncomeRecordUploadForm,
 } from "@/components/income-record-forms";
 import { StatusBadge } from "@/components/status";
-import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
@@ -386,26 +385,12 @@ export default async function FilingPage({
             )}
           </Card>
           <aside className="space-y-3">
+            <PdfDownloadOptions formCode={selectedMeta.formCode} pdfUrl={pdfUrl} />
             <div className="rounded-lg border border-grey-300 bg-grey-50 p-4">
               <p className="text-xs font-bold uppercase text-grey-500">Authority</p>
               <p className="mt-2 font-extrabold text-grey-900">{plan.rule.title}</p>
               <p className="mt-2 text-sm leading-6 text-grey-600">{plan.rule.sourceTitle}</p>
             </div>
-            {plan.computation ? (
-              <>
-                <a className={`${buttonClass("secondary")} w-full`} href={`${pdfUrl}&download=1`}>
-                  <Download aria-hidden size={18} />
-                  Download draft PDF
-                </a>
-                <div className="aspect-[3/4] overflow-hidden rounded-lg border border-grey-300 bg-grey-100">
-                  <iframe
-                    className="h-full w-full"
-                    src={`${pdfUrl}#zoom=page-width&pagemode=none`}
-                    title={`BIR Form ${selectedMeta.formCode} preview`}
-                  />
-                </div>
-              </>
-            ) : null}
           </aside>
         </div>
       ) : null}

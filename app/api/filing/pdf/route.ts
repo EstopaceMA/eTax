@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
-import { getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
+import {
+  filingYear,
+  getQuarterMeta,
+  parseFilingQuarter,
+} from "@/lib/filing-periods";
+import { DUMMY_1701Q } from "@/lib/pdf/1701q/dummy-data";
+import { render1701Q } from "@/lib/pdf/1701q/render";
 
 export const runtime = "nodejs";
 
@@ -15,8 +21,19 @@ export async function GET(request: NextRequest) {
   const quarter = parseFilingQuarter(request.nextUrl.searchParams.get("quarter"));
   const quarterMeta = getQuarterMeta(quarter);
   const download = request.nextUrl.searchParams.get("download") === "1";
+  const flatten = request.nextUrl.searchParams.get("flatten") === "1";
 
-  const pdfBytes = await readFile(path.join(formDirectory, quarterMeta.pdfFile));
+  const pdfBytes =
+    quarterMeta.formCode === "1701Q"
+      ? await render1701Q(
+          {
+            ...DUMMY_1701Q,
+            year: String(filingYear),
+            quarter: quarterMeta.quarter as 1 | 2 | 3,
+          },
+          { flatten },
+        )
+      : await readFile(path.join(formDirectory, quarterMeta.pdfFile));
   const filename = `etax-${quarterMeta.formCode.toLowerCase()}-${sanitizeFilenamePart(quarterMeta.period)}.pdf`;
 
   return new NextResponse(Buffer.from(pdfBytes), {
