@@ -404,14 +404,25 @@ function SessionSidebar({
           </p>
         )}
       </div>
-      <div className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-3">
-        <ShieldCheck aria-hidden className="text-primary-500" size={18} />
-        <p className="mt-2 text-xs font-semibold text-primary-950">
-          Approval stays with you
-        </p>
-        <p className="mt-1 text-[11px] leading-4 text-primary-800">
-          Chats share filing progress, but each approval remains exact and separate.
-        </p>
+      <div className="relative mt-3 overflow-hidden rounded-lg border border-primary-500 bg-primary-500 p-3">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-0 size-40 -translate-y-1/2 translate-x-1/2 rounded-full bg-white/5"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 size-40 -translate-x-1/2 translate-y-1/2 rounded-full bg-white/5"
+        />
+        <div className="relative z-10">
+          <ShieldCheck aria-hidden className="text-white" size={18} />
+          <p className="mt-2 text-xs font-semibold text-white">
+            Approval stays with you
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-white">
+            Chats share filing progress, but each approval remains exact and
+            separate.
+          </p>
+        </div>
       </div>
     </>
   );
