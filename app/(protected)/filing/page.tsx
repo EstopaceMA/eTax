@@ -8,6 +8,7 @@ import {
   CreditCard,
   FileCheck2,
   FileText,
+  HelpCircle,
   ShieldCheck,
 } from "lucide-react";
 import {
@@ -61,6 +62,172 @@ function money(value: number) {
     currency: "PHP",
     style: "currency",
   }).format(value);
+}
+
+function traceValue(item: { label: string; value: string | number }) {
+  if (typeof item.value !== "number") {
+    return item.value;
+  }
+
+  const normalizedLabel = item.label.toLowerCase();
+
+  if (normalizedLabel.includes("record") || normalizedLabel.includes("count")) {
+    return item.value.toLocaleString("en-PH");
+  }
+
+  const moneyLabels = [
+    "amount",
+    "income",
+    "paid",
+    "payable",
+    "payments",
+    "receipts",
+    "reduction",
+    "revenues",
+    "sales",
+    "tax due",
+  ];
+
+  return moneyLabels.some((label) => normalizedLabel.includes(label))
+    ? money(item.value)
+    : item.value.toLocaleString("en-PH");
+}
+
+function traceLineCode(label: string) {
+  const match = label.match(/\(Item (\d+)\)/);
+
+  if (match) {
+    return match[1];
+  }
+
+  if (label === "Covered period") {
+    return "Period";
+  }
+
+  if (label === "Confirmed income records") {
+    return "Count";
+  }
+
+  if (label === "Tax rate") {
+    return "Rate";
+  }
+
+  return "";
+}
+
+function traceLabel(label: string) {
+  return label.replace(/\s+\(Item \d+\)/, "");
+}
+
+function isMoneyTrace(item: { label: string; value: string | number }) {
+  return typeof item.value === "number" && traceValue(item).startsWith("₱");
+}
+
+function traceHelpText(label: string) {
+  if (label === "Covered period") {
+    return "The filing quarter selected for this return.";
+  }
+
+  if (label === "Confirmed income records") {
+    return "Only records you confirmed are included in the computation.";
+  }
+
+  if (label.includes("Sales/receipts")) {
+    return "This is the confirmed gross income for the selected quarter and maps to Form 1701Q item 47.";
+  }
+
+  if (label.includes("prior quarters")) {
+    return "This carries confirmed income from earlier quarters in the same taxable year.";
+  }
+
+  if (label.includes("Cumulative taxable income")) {
+    return "This is current-quarter income plus prior-quarter income before the annual reduction.";
+  }
+
+  if (label.includes("Allowable reduction")) {
+    return "The annual reduction is applied once against cumulative gross income for eligible taxpayers.";
+  }
+
+  if (label.includes("Taxable income to date")) {
+    return "This is cumulative income after subtracting the annual reduction, floored at zero.";
+  }
+
+  if (label === "Tax rate") {
+    return "The active 8% income tax option rate.";
+  }
+
+  if (label.includes("Tax due")) {
+    return "The computed tax before subtracting tax payments or withholding credits.";
+  }
+
+  if (label.includes("Credited")) {
+    return "Payments already recorded for earlier quarters reduce the amount still payable.";
+  }
+
+  if (label.includes("Tax payable")) {
+    return "The amount currently payable after credits. This maps to Form 1701Q item 63.";
+  }
+
+  return null;
+}
+
+function traceAccentClass(label: string) {
+  if (label.includes("Tax payable")) {
+    return "border-primary-500";
+  }
+
+  return "border-transparent";
+}
+
+function traceBadgeClass(label: string) {
+  if (label.includes("Tax payable")) {
+    return "border-primary-500 bg-primary-500 text-white";
+  }
+
+  return "border-grey-300 bg-white text-grey-700";
+}
+
+function HelpTip({ label, text }: { label: string; text: string }) {
+  return (
+    <span className="group/help relative inline-flex shrink-0 align-middle">
+      <span
+        aria-label={`${label}: ${text}`}
+        className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+        role="button"
+        tabIndex={0}
+      >
+        <HelpCircle aria-hidden size={14} />
+      </span>
+      <span className="help-card pointer-events-none absolute left-1/2 top-7 z-50 hidden w-72 -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-semibold leading-5 group-focus-within/help:block group-hover/help:block">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function ComputationHelp() {
+  const text =
+    "eTax totals confirmed income for the quarter, adds prior-quarter income, subtracts the annual reduction once, applies the 8% rate, then credits payments already recorded for earlier quarters.";
+
+  return (
+    <HelpTip label="How is this computed?" text={text} />
+  );
+}
+
+function displayComputationNote(note: string) {
+  if (note === "No creditable tax withheld (BIR Form 2307) recorded for this quarter.") {
+    return "No BIR Form 2307 withholding credit is recorded for this quarter.";
+  }
+
+  if (note.includes("eight_percent_gross")) {
+    return "Uses the 8% option: cumulative gross sales/receipts less the annual reduction, then multiplied by 8%.";
+  }
+
+  if (note.startsWith("Computed under ")) {
+    return note.replace("Computed under", "Rule source:");
+  }
+
+  return note;
 }
 
 function formatUploadDate(date: string) {
@@ -120,6 +287,7 @@ export default async function FilingPage({
   const notice = params?.notice ? notices[params.notice] : null;
   const paymentReturned = params?.payment === "proof-required";
   const activeTask = plan.task.task_type;
+  const computationIsDemo = plan.rule.status === "demo";
 
   const views = [
     { key: "records", label: "Records", icon: ClipboardCheck },
@@ -323,7 +491,7 @@ export default async function FilingPage({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase text-primary-700">
-                  Demo computation
+                  {computationIsDemo ? "Demo computation" : "Tax computation"}
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-grey-900">
                   {selectedMeta.period} return review
@@ -343,41 +511,144 @@ export default async function FilingPage({
                     ["Recorded income", money(plan.computation.input_snapshot.totalIncome)],
                     ["Amount payable", money(plan.computation.output_snapshot.amountPayable)],
                     ["Rule version", plan.rule.version],
-                  ].map(([label, value]) => (
-                    <div className="border-b border-grey-300 pb-3" key={label}>
-                      <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                      <dd className="mt-1 font-extrabold text-grey-900">{value}</dd>
+                  ].map(([label, value], index) => (
+                    <div
+                      className="calculation-reveal border-b border-grey-300 pb-3"
+                      key={label}
+                      style={{ animationDelay: `${index * 55}ms` }}
+                    >
+                      <dt className="flex items-center gap-2 text-xs font-bold uppercase text-grey-500">
+                        {label}
+                        {label === "Amount payable" ? <ComputationHelp /> : null}
+                      </dt>
+                      <dd
+                        className={[
+                          "mt-1 font-extrabold text-grey-900",
+                          label === "Recorded income" || label === "Amount payable"
+                            ? "money-figure text-2xl text-primary-900"
+                            : "",
+                        ].join(" ")}
+                      >
+                        {value}
+                      </dd>
                     </div>
                   ))}
                 </dl>
-                <div>
-                  <h3 className="text-sm font-extrabold text-grey-900">Computation trace</h3>
-                  <ol className="mt-3 space-y-2">
-                    {plan.computation.trace.map((item) => (
-                      <li
-                        className="flex items-center justify-between gap-3 border-b border-grey-200 pb-2 text-sm"
-                        key={item.label}
-                      >
-                        <span className="text-grey-600">{item.label}</span>
-                        <span className="text-right font-bold text-grey-900">
-                          {typeof item.value === "number" && item.label.includes("income")
-                            ? money(item.value)
-                            : item.value}
-                        </span>
+                <div
+                  className="calculation-reveal overflow-hidden rounded-lg border border-grey-300 bg-white"
+                  style={{ animationDelay: "360ms" }}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-grey-300 bg-grey-50 px-4 py-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase text-primary-700">
+                        Computation ledger
+                      </p>
+                      <h3 className="mt-0.5 text-base font-extrabold text-grey-900">
+                        Form 1701Q Schedule II/III
+                      </h3>
+                    </div>
+                  </div>
+                  <div className="ledger-scroll max-h-[360px] overflow-auto">
+                    <table className="min-w-full table-fixed border-separate border-spacing-0 text-sm">
+                      <colgroup>
+                        <col className="w-24" />
+                        <col />
+                        <col className="w-40" />
+                      </colgroup>
+                      <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_#dfe3e8]">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                            Line
+                          </th>
+                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                            Description
+                          </th>
+                          <th className="px-4 py-2 text-right text-[11px] font-bold uppercase text-grey-500">
+                            Value
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plan.computation.trace.filter((item) => item.label !== "Rounding").map((item, index) => {
+                          const code = traceLineCode(item.label);
+                          const value = traceValue(item);
+                          const moneyValue = isMoneyTrace(item);
+                          const helpText = traceHelpText(item.label);
+
+                          return (
+                            <tr
+                              className={[
+                                "calculation-reveal border-b border-grey-200",
+                                item.label.includes("Tax payable")
+                                  ? "bg-primary-50"
+                                  : index % 2 === 0 ? "bg-white" : "bg-grey-50/70",
+                              ].join(" ")}
+                              key={item.label}
+                              style={{ animationDelay: `${430 + index * 35}ms` }}
+                            >
+                              <td
+                                className={[
+                                  "border-b border-l-4 border-grey-200 px-4 py-3 align-middle",
+                                  traceAccentClass(item.label),
+                                ].join(" ")}
+                              >
+                                {code ? (
+                                  <span
+                                    className={[
+                                      "inline-flex h-7 min-w-14 items-center justify-center rounded-md border px-2 text-xs font-black",
+                                      traceBadgeClass(item.label),
+                                    ].join(" ")}
+                                  >
+                                    {code}
+                                  </span>
+                                ) : (
+                                  <span aria-hidden className="block h-7 min-w-14" />
+                                )}
+                              </td>
+                              <td className="border-b border-grey-200 px-4 py-3 align-middle font-semibold text-grey-700">
+                                <span className="flex min-w-0 flex-col gap-1">
+                                  <span className="inline-flex min-w-0 items-center gap-2">
+                                    <span>{traceLabel(item.label)}</span>
+                                    {helpText ? (
+                                      <HelpTip label={traceLabel(item.label)} text={helpText} />
+                                    ) : null}
+                                  </span>
+                                </span>
+                              </td>
+                              <td
+                                className={[
+                                  "border-b border-grey-200 px-4 py-3 text-right align-middle",
+                                  moneyValue
+                                    ? "money-figure text-base font-black text-grey-900"
+                                    : "font-bold text-grey-800",
+                                ].join(" ")}
+                              >
+                                {value}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="calculation-reveal rounded-lg border border-primary-200 bg-primary-50 px-4 py-3">
+                  <p className="text-sm font-extrabold text-grey-900">Calculation notes</p>
+                  <ul className="mt-2 space-y-2">
+                    {plan.computation.assumptions.map((assumption) => (
+                      <li className="text-sm leading-6 text-grey-700" key={assumption}>
+                        {displayComputationNote(assumption)}
                       </li>
                     ))}
-                  </ol>
-                </div>
-                <div className="border-l-4 border-warning-500 bg-warning-500/10 px-4 py-3">
-                  <p className="text-sm font-extrabold text-grey-900">Material assumptions</p>
-                  {plan.computation.assumptions.map((assumption) => (
-                    <p className="mt-1 text-sm leading-6 text-grey-700" key={assumption}>
-                      {assumption}
-                    </p>
-                  ))}
+                  </ul>
                 </div>
                 {activeTask === "review_computation" ? (
-                  <ConfirmComputationForm quarter={selectedQuarter} />
+                  <div className="sticky bottom-3 z-20 rounded-lg border border-grey-300 bg-white/95 p-3 shadow-[0_12px_32px_rgba(20,26,33,0.16)] backdrop-blur">
+                    <ConfirmComputationForm
+                      isDemo={computationIsDemo}
+                      quarter={selectedQuarter}
+                    />
+                  </div>
                 ) : null}
               </>
             ) : (
@@ -388,11 +659,33 @@ export default async function FilingPage({
           </Card>
           <aside className="space-y-3">
             <PdfDownloadOptions formCode={selectedMeta.formCode} pdfUrl={pdfUrl} />
-            <div className="rounded-lg border border-grey-300 bg-grey-50 p-4">
-              <p className="text-xs font-bold uppercase text-grey-500">Authority</p>
-              <p className="mt-2 font-extrabold text-grey-900">{plan.rule.title}</p>
-              <p className="mt-2 text-sm leading-6 text-grey-600">{plan.rule.sourceTitle}</p>
-            </div>
+            <details className="group rounded-lg border border-grey-300 bg-grey-50 p-4">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500">
+                <span>
+                  <span className="block text-xs font-bold uppercase text-primary-700">
+                    Ruleset used
+                  </span>
+                  <span className="mt-2 block font-extrabold leading-6 text-grey-900">
+                    {plan.rule.title}
+                  </span>
+                </span>
+                <span className="mt-0.5 shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-primary-700">
+                  Details
+                </span>
+              </summary>
+              <dl className="mt-4 space-y-3 border-t border-grey-300 pt-4 text-sm">
+                <div>
+                  <dt className="text-xs font-bold uppercase text-grey-500">Version</dt>
+                  <dd className="mt-1 font-semibold text-grey-800">{plan.rule.version}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-bold uppercase text-grey-500">Source</dt>
+                  <dd className="mt-1 font-semibold leading-6 text-grey-800">
+                    {plan.rule.sourceTitle}
+                  </dd>
+                </div>
+              </dl>
+            </details>
           </aside>
         </div>
       ) : null}

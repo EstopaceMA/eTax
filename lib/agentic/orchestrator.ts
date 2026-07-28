@@ -177,6 +177,34 @@ function taskState(
   return { state: "ready_for_review", blocker: null, confidence };
 }
 
+function normalizeComputationAssumptions(
+  assumptions: string[],
+  activeRule: TaxRuleSet<EightPercentRuleConfig> | null,
+) {
+  const ratePercent = activeRule
+    ? (Number(activeRule.configuration.rate) * 100).toFixed(0)
+    : "8";
+
+  return assumptions.map((assumption) => {
+    if (
+      assumption ===
+      "No creditable tax withheld (BIR Form 2307) recorded for this quarter."
+    ) {
+      return "No BIR Form 2307 withholding credit is recorded for this quarter.";
+    }
+
+    if (assumption.includes("eight_percent_gross")) {
+      return `Uses the 8% option: cumulative gross sales/receipts less the annual reduction, then multiplied by ${ratePercent}%.`;
+    }
+
+    if (assumption.startsWith("Computed under ") && activeRule) {
+      return `Rule source: ${activeRule.title} (${activeRule.sourceTitle}).`;
+    }
+
+    return assumption;
+  });
+}
+
 async function prepareComputation(
   supabase: SupabaseClient,
   userId: string,
@@ -186,7 +214,6 @@ async function prepareComputation(
   activeRule: TaxRuleSet<EightPercentRuleConfig> | null,
 ) {
   if (
-    records.length === 0 ||
     records.some(
       (record) => record.extraction_status !== "confirmed" || record.total_income === null,
     )
@@ -255,17 +282,10 @@ async function prepareComputation(
         value: result.taxPaymentsPreviousQuarters,
       },
       { label: "Tax payable (Item 63)", value: result.taxPayable },
-      {
-        label: "Rounding",
-        value:
-          activeRule.configuration.rounding === "whole_peso"
-            ? "PHP, whole pesos"
-            : "PHP, 2 decimal places",
-      },
     ];
     assumptions = [
       ...result.assumptions,
-      `Computed under ${activeRule.title} (${activeRule.sourceTitle}).`,
+      `Rule source: ${activeRule.title} (${activeRule.sourceTitle}).`,
     ];
     warnings = result.warnings;
   } else {
@@ -333,6 +353,11 @@ async function prepareComputation(
       },
     });
   }
+
+  computation = {
+    ...computation,
+    assumptions: normalizeComputationAssumptions(computation.assumptions, activeRule),
+  };
 
   const result = {
     amountPayable: computation.output_snapshot.amountPayable,
@@ -568,10 +593,18 @@ export async function refreshAgenticPlan(
     hasException: (openExceptionResult.data?.length ?? 0) > 0,
   };
   const activeStep = nextAgenticStep(facts);
+  const realTaxComputationApplies = quarter.formCode === "1701Q" && Boolean(activeRule);
 
   const taskRows = agenticSteps.map((step) => {
     const metadata = taskMetadata[step];
     const status = taskState(step, activeStep, facts, periodOpen);
+    const computationRuleSetId = computation?.rule_set_id ?? null;
+    const reviewTitle = realTaxComputationApplies
+      ? "Review the tax computation"
+      : metadata.title;
+    const reviewReason = realTaxComputationApplies
+      ? "Check the records, assumptions, trace, and computed liability."
+      : metadata.reason;
 
     return {
       user_id: user.id,
@@ -584,10 +617,14 @@ export async function refreshAgenticPlan(
       title:
         facts.paymentVerified && step === "capture_payment_proof"
           ? `${quarter.period} filing journey complete`
+          : step === "review_computation"
+            ? reviewTitle
           : metadata.title,
       reason:
         facts.paymentVerified && step === "capture_payment_proof"
           ? "Filing acknowledgement and payment proof are both preserved."
+          : step === "review_computation"
+            ? reviewReason
           : metadata.reason,
       blocker: status.blocker,
       action_label:
@@ -612,7 +649,7 @@ export async function refreshAgenticPlan(
         "approve_handoff",
         "capture_acknowledgement",
       ].includes(step)
-        ? DEMO_RULE_ID
+        ? computationRuleSetId
         : null,
       completed_at: status.state === "completed" ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),

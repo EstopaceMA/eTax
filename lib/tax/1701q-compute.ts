@@ -122,7 +122,7 @@ export function computeQuarterly1701Q(
 
   if (!input.creditableTaxWithheldThisQuarter) {
     assumptions.push(
-      "No creditable tax withheld (BIR Form 2307) recorded for this quarter.",
+      "No BIR Form 2307 withholding credit is recorded for this quarter.",
     );
   }
 
@@ -140,7 +140,7 @@ export function computeQuarterly1701Q(
   }
 
   assumptions.push(
-    `Computed at ${(rate * 100).toFixed(0)}% of cumulative gross less the annual reduction, per ${config.kind}.`,
+    `Uses the 8% option: cumulative gross sales/receipts less the annual reduction, then multiplied by ${(rate * 100).toFixed(0)}%.`,
   );
 
   return {
