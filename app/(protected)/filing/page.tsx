@@ -90,8 +90,10 @@ export default async function FilingPage({
     view?: string;
   }>;
 }) {
-  const params = await searchParams;
-  const data = await getWorkspaceData();
+  const [params, data] = await Promise.all([
+    searchParams,
+    getWorkspaceData(),
+  ]);
   const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
   const requestedMeta =
     filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ?? filingQuarters[1];

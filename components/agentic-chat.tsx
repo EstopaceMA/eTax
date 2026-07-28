@@ -38,6 +38,7 @@ import {
 import { uploadIncomeRecord } from "@/app/actions/workspace";
 import { ChatbotIcon } from "@/components/chatbot-icon";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
+import { AgenticTimelineSkeleton } from "@/components/loading-skeletons";
 import { buttonClass } from "@/components/ui/button";
 import { filingQuarters, type FilingQuarter } from "@/lib/filing-periods";
 import type {
@@ -616,6 +617,7 @@ export function AgenticChat({
   }
 
   const plan = snapshot?.plan;
+  const showWorkflowSkeleton = isLoading && !snapshot;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
@@ -682,7 +684,10 @@ export function AgenticChat({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <main className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-6">
+            <main
+              aria-busy={isLoading}
+              className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-6"
+            >
               {!snapshot && error ? (
                 <div className="mt-6 flex items-start gap-3">
                   <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-error-500 text-white">
@@ -694,21 +699,9 @@ export function AgenticChat({
                 </div>
               ) : null}
 
-              {isLoading ? (
-                <div className="mt-6 flex items-start gap-3">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-500 text-white">
-                    <Sparkles aria-hidden size={16} />
-                  </span>
-                  <div className="flex min-h-40 flex-1 items-center justify-center rounded-xl border border-grey-300 bg-white">
-                    <div className="text-center">
-                      <Loader2 aria-hidden className="mx-auto animate-spin text-primary-500" size={24} />
-                      <p className="mt-3 text-sm font-bold text-grey-600">Reconciling this period…</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              {showWorkflowSkeleton ? <AgenticTimelineSkeleton /> : null}
 
-              {!isLoading && plan && snapshot ? (
+              {plan && snapshot ? (
                 <div className="mt-6 space-y-6" aria-label="Filing timeline">
                   {snapshot.timeline.map((item, index) => {
                     const taskBlock = item.block;

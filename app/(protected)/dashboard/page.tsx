@@ -28,8 +28,10 @@ function deadlineDistance(date: string) {
 }
 
 export default async function DashboardPage() {
-  const data = await getWorkspaceData();
-  const plan = await getAgenticPlan();
+  const [data, plan] = await Promise.all([
+    getWorkspaceData(),
+    getAgenticPlan(),
+  ]);
   const requiredItems = data.checklistItems.filter((item) => item.required);
   const completedRequired = requiredItems.filter(
     (item) => item.status === "complete",
