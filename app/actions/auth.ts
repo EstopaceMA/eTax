@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { resolveSsoLogin } from "@/lib/egov-sso/resolve";
+import { linkSsoAccount, syncTaxpayerRdo } from "@/lib/egov-sso/account";
+import { createSsoSession } from "@/lib/egov-sso/session";
 import {
   getTaxpayerCategoryLabel,
   taxpayerCategories,
@@ -14,17 +17,37 @@ function stringValue(formData: FormData, key: string) {
 }
 
 export async function signIn(formData: FormData) {
-  const supabase = await createClient();
-  const email = stringValue(formData, "email");
-  const password = stringValue(formData, "password");
+  const email = stringValue(formData, "email").toLowerCase();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  if (!email) {
+    redirect(`/sign-in?error=${encodeURIComponent("Enter your email.")}`);
+  }
 
-  if (error) {
-    redirect(`/sign-in?error=${encodeURIComponent(error.message)}`);
+  try {
+    const { profile } = await resolveSsoLogin(email);
+
+    const ssoUid = profile.sso_uid as string;
+    const fullName = [profile.first_name, profile.middle_name, profile.last_name]
+      .filter(Boolean)
+      .join(" ");
+
+    const userId = await linkSsoAccount({
+      ssoUid,
+      email: profile.email as string,
+      fullName,
+      userId: (profile.user_id as string | null) ?? null,
+    });
+
+    await syncTaxpayerRdo(userId, {
+      municipality: (profile.municipality as string | null) ?? null,
+      province: (profile.province as string | null) ?? null,
+    });
+
+    await createSsoSession(profile.email as string);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "eGov SSO sign-in failed.";
+    redirect(`/sign-in?error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/", "layout");

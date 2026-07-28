@@ -5,12 +5,12 @@ import { getQuarterMeta } from "@/lib/filing-periods";
 import { getTaxAmountPayable } from "@/lib/tax-amount-payable";
 import { normalizePhilippineMobileNumber } from "@/lib/emessage/philippines";
 import { sendSms } from "@/lib/emessage/sms";
-import type { TaxpayerProfile } from "@/lib/types";
+import type { SsoProfile } from "@/lib/types";
 
 type SendFilingConfirmationSmsInput = {
   isPaid: boolean;
   quarter: FilingQuarter;
-  taxpayerProfile: Pick<TaxpayerProfile, "mobile_number"> | null;
+  ssoProfile: Pick<SsoProfile, "mobile"> | null;
 };
 
 export type FilingConfirmationSmsResult =
@@ -28,10 +28,10 @@ function formatPhpAmount(amount: number) {
 export async function sendFilingConfirmationSms({
   isPaid,
   quarter,
-  taxpayerProfile,
+  ssoProfile,
 }: SendFilingConfirmationSmsInput): Promise<FilingConfirmationSmsResult> {
   const recipient = normalizePhilippineMobileNumber(
-    taxpayerProfile?.mobile_number ?? null,
+    ssoProfile?.mobile ?? null,
   );
 
   if (!recipient) {

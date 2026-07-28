@@ -18,6 +18,7 @@ import type {
   FilingObligation,
   IncomeRecordUpload,
   Profile,
+  SsoProfile,
   TaxpayerProfile,
   WorkspaceData,
 } from "@/lib/types";
@@ -65,14 +66,14 @@ export async function ensureWorkspace() {
 
     const defaults = getTaxpayerCategoryDefaults(metadataCategory);
 
+    // Name, contact and TIN come from egov_sso_profiles; only BIR registration
+    // details live here, and the RDO is set from the taxpayer's SSO address.
     await supabase.from("taxpayer_profiles").insert({
       user_id: user.id,
       taxpayer_type: defaults.taxpayerType,
       work_type: defaults.workType,
       registration_status: "Already registered",
-      tin_status: "123-456-789-000",
-      mobile_number: "09064902734",
-      rdo: "RDO 043A - East Pasig",
+      rdo: null,
       filing_frequency: defaults.filingFrequency,
     });
   }
@@ -184,6 +185,34 @@ async function getStorageIncomeRecordUploads(userId: string): Promise<IncomeReco
   return uploads.flat();
 }
 
+/** Shapes an egov_sso_profiles row, deriving the display name from its parts. */
+function toSsoProfile(row: unknown): SsoProfile | null {
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+
+  const r = row as Record<string, string | null>;
+  const fullName = [r.first_name, r.middle_name, r.last_name]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    sso_uid: r.sso_uid ?? "",
+    email: r.email ?? "",
+    first_name: r.first_name ?? null,
+    middle_name: r.middle_name ?? null,
+    last_name: r.last_name ?? null,
+    full_name: fullName,
+    mobile: r.mobile ?? null,
+    tin_id: r.tin_id ?? null,
+    photo_url: r.photo_url ?? null,
+    birth_date: r.birth_date ?? null,
+    nationality: r.nationality ?? null,
+    address: r.address ?? null,
+    postal: r.postal ?? null,
+  };
+}
+
 export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
   await ensureWorkspace();
   const user = await requireUser();
@@ -192,6 +221,7 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
   const [
     profileResult,
     taxpayerResult,
+    ssoResult,
     checklistResult,
     deadlinesResult,
     filingResult,
@@ -199,6 +229,7 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
     supabase.from("taxpayer_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+    supabase.from("egov_sso_profiles").select("*").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("document_checklist_items")
       .select("*")
@@ -257,6 +288,7 @@ export const getWorkspaceData = cache(async (): Promise<WorkspaceData> => {
   return {
     profile: (profileResult.data as Profile | null) ?? null,
     taxpayerProfile: (taxpayerResult.data as TaxpayerProfile | null) ?? null,
+    ssoProfile: toSsoProfile(ssoResult.data),
     checklistItems: (checklistResult.data as DocumentChecklistItem[] | null) ?? [],
     deadlines: (deadlinesResult.data as Deadline[] | null) ?? [],
     filingObligations: (filingResult.data as FilingObligation[] | null) ?? [],

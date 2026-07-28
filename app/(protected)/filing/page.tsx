@@ -408,8 +408,8 @@ export default async function FilingPage({
           </div>
           <dl className="grid gap-3 sm:grid-cols-2">
             {[
-              ["Taxpayer", data.profile?.full_name ?? "Taxpayer"],
-              ["TIN", data.taxpayerProfile?.tin_status ?? "Not provided"],
+              ["Taxpayer", data.ssoProfile?.full_name || data.profile?.full_name || "Taxpayer"],
+              ["TIN", data.ssoProfile?.tin_id ?? "Not provided"],
               ["Period", selectedMeta.period],
               ["Form", `BIR Form ${selectedMeta.formCode}`],
               ["Amount", money(plan.computation?.output_snapshot.amountPayable ?? 0)],

@@ -32,10 +32,25 @@ export type TaxpayerProfile = {
   taxpayer_type: string;
   work_type: string;
   registration_status: string;
-  tin_status: string;
-  mobile_number: string | null;
   rdo: string | null;
   filing_frequency: string;
+};
+
+/** Identity as held by eGovPH — the source of truth for name, contact and TIN. */
+export type SsoProfile = {
+  sso_uid: string;
+  email: string;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  full_name: string;
+  mobile: string | null;
+  tin_id: string | null;
+  photo_url: string | null;
+  birth_date: string | null;
+  nationality: string | null;
+  address: string | null;
+  postal: string | null;
 };
 
 export type DocumentChecklistItem = {
@@ -91,6 +106,7 @@ export type IncomeRecordUpload = {
 export type WorkspaceData = {
   profile: Profile | null;
   taxpayerProfile: TaxpayerProfile | null;
+  ssoProfile: SsoProfile | null;
   checklistItems: DocumentChecklistItem[];
   deadlines: Deadline[];
   filingObligations: FilingObligation[];
