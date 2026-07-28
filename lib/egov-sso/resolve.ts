@@ -11,6 +11,24 @@ export interface SsoResolution {
   ssoError?: string;
 }
 
+/**
+ * Whether a spent or missing exchange code may fall back to the profile stored
+ * on a previous login.
+ *
+ * On (the default) keeps sign-in working without an admin pasting a fresh code
+ * every time. Off makes a valid, unused exchange code mandatory, so an admin
+ * gates every sign-in rather than the email alone being enough.
+ */
+function storedFallbackAllowed() {
+  const raw = process.env.EGOV_SSO_ALLOW_STORED_FALLBACK?.trim().toLowerCase();
+
+  if (!raw) {
+    return true;
+  }
+
+  return !["false", "0", "off", "no"].includes(raw);
+}
+
 async function getStoredProfile(email: string) {
   const supabase = createAdminClient();
 
@@ -28,7 +46,8 @@ async function getStoredProfile(email: string) {
  *
  * Dev/staging flow: an admin pastes a freshly generated exchange code into
  * public.egov_sso_exchange_codes. Codes are single-use, so when one is absent
- * or already spent we fall back to the profile stored on a previous login.
+ * or already spent the stored profile is used instead — unless
+ * EGOV_SSO_ALLOW_STORED_FALLBACK is off, which makes a valid code mandatory.
  */
 export async function resolveSsoLogin(email: string): Promise<SsoResolution> {
   const supabase = createAdminClient();
@@ -52,6 +71,14 @@ export async function resolveSsoLogin(email: string): Promise<SsoResolution> {
     } catch (error) {
       ssoError = error instanceof Error ? error.message : String(error);
     }
+  }
+
+  if (!storedFallbackAllowed()) {
+    throw new Error(
+      ssoError
+        ? `That exchange code did not work. Add a fresh one for ${email} in egov_sso_exchange_codes. (${ssoError})`
+        : `A valid exchange code is required for ${email}. Add one in egov_sso_exchange_codes.`,
+    );
   }
 
   const stored = await getStoredProfile(email);
