@@ -63,6 +63,36 @@ function money(value: number) {
   }).format(value);
 }
 
+function traceValue(item: { label: string; value: string | number }) {
+  if (typeof item.value !== "number") {
+    return item.value;
+  }
+
+  const normalizedLabel = item.label.toLowerCase();
+  const countLabels = ["count", "record"];
+
+  if (countLabels.some((label) => normalizedLabel.includes(label))) {
+    return item.value.toLocaleString("en-PH");
+  }
+
+  const moneyLabels = [
+    "amount",
+    "income",
+    "paid",
+    "payable",
+    "payments",
+    "receipts",
+    "reduction",
+    "revenues",
+    "sales",
+    "tax due",
+  ];
+
+  return moneyLabels.some((label) => normalizedLabel.includes(label))
+    ? money(item.value)
+    : item.value.toLocaleString("en-PH");
+}
+
 function formatUploadDate(date: string) {
   return new Intl.DateTimeFormat("en-PH", {
     month: "short",
@@ -120,6 +150,7 @@ export default async function FilingPage({
   const notice = params?.notice ? notices[params.notice] : null;
   const paymentReturned = params?.payment === "proof-required";
   const activeTask = plan.task.task_type;
+  const computationIsDemo = plan.rule.status === "demo";
 
   const views = [
     { key: "records", label: "Records", icon: ClipboardCheck },
@@ -323,7 +354,7 @@ export default async function FilingPage({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase text-primary-700">
-                  Demo computation
+                  {computationIsDemo ? "Demo computation" : "Tax computation"}
                 </p>
                 <h2 className="mt-1 text-xl font-extrabold text-grey-900">
                   {selectedMeta.period} return review
@@ -360,9 +391,7 @@ export default async function FilingPage({
                       >
                         <span className="text-grey-600">{item.label}</span>
                         <span className="text-right font-bold text-grey-900">
-                          {typeof item.value === "number" && item.label.includes("income")
-                            ? money(item.value)
-                            : item.value}
+                          {traceValue(item)}
                         </span>
                       </li>
                     ))}
@@ -377,7 +406,10 @@ export default async function FilingPage({
                   ))}
                 </div>
                 {activeTask === "review_computation" ? (
-                  <ConfirmComputationForm quarter={selectedQuarter} />
+                  <ConfirmComputationForm
+                    isDemo={computationIsDemo}
+                    quarter={selectedQuarter}
+                  />
                 ) : null}
               </>
             ) : (

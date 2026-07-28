@@ -568,10 +568,18 @@ export async function refreshAgenticPlan(
     hasException: (openExceptionResult.data?.length ?? 0) > 0,
   };
   const activeStep = nextAgenticStep(facts);
+  const realTaxComputationApplies = quarter.formCode === "1701Q" && Boolean(activeRule);
 
   const taskRows = agenticSteps.map((step) => {
     const metadata = taskMetadata[step];
     const status = taskState(step, activeStep, facts, periodOpen);
+    const computationRuleSetId = computation?.rule_set_id ?? null;
+    const reviewTitle = realTaxComputationApplies
+      ? "Review the tax computation"
+      : metadata.title;
+    const reviewReason = realTaxComputationApplies
+      ? "Check the records, assumptions, trace, and computed liability."
+      : metadata.reason;
 
     return {
       user_id: user.id,
@@ -584,10 +592,14 @@ export async function refreshAgenticPlan(
       title:
         facts.paymentVerified && step === "capture_payment_proof"
           ? `${quarter.period} filing journey complete`
+          : step === "review_computation"
+            ? reviewTitle
           : metadata.title,
       reason:
         facts.paymentVerified && step === "capture_payment_proof"
           ? "Filing acknowledgement and payment proof are both preserved."
+          : step === "review_computation"
+            ? reviewReason
           : metadata.reason,
       blocker: status.blocker,
       action_label:
@@ -612,7 +624,7 @@ export async function refreshAgenticPlan(
         "approve_handoff",
         "capture_acknowledgement",
       ].includes(step)
-        ? DEMO_RULE_ID
+        ? computationRuleSetId
         : null,
       completed_at: status.state === "completed" ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),

@@ -141,13 +141,19 @@ export function ConfirmIncomeRecordForm({
   );
 }
 
-export function ConfirmComputationForm({ quarter }: { quarter: number }) {
+export function ConfirmComputationForm({
+  isDemo,
+  quarter,
+}: {
+  isDemo: boolean;
+  quarter: number;
+}) {
   return (
     <form action={confirmComputationFormAction}>
       <input name="quarter" type="hidden" value={quarter} />
       <PendingButton pendingLabel="Saving review...">
         <FileCheck2 aria-hidden size={18} />
-        I reviewed this demo computation
+        {isDemo ? "I reviewed this demo computation" : "I reviewed this tax computation"}
       </PendingButton>
     </form>
   );
