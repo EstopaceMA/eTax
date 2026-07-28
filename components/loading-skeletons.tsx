@@ -210,17 +210,65 @@ export function FilingSkeleton() {
           <Skeleton className="h-12 w-full bg-grey-300" key={index} />
         ))}
       </div>
-      <div className={panelClass}>
+      <div className={`${panelClass} overflow-hidden`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <Skeleton className="h-3 w-28" />
+            <div className="flex items-center gap-2">
+              <svg
+                aria-hidden="true"
+                className="size-4 animate-spin text-primary-700 motion-reduce:animate-none"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-20"
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  d="M21 12a9 9 0 0 0-9-9"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="4"
+                />
+              </svg>
+              <p className="text-xs font-bold uppercase text-primary-700">
+                Preparing tax computation
+              </p>
+            </div>
             <Skeleton className="mt-3 h-7 w-48" />
             <Skeleton className="mt-3 h-4 w-4/5" />
           </div>
           <Skeleton className="h-8 w-24 rounded-full" />
         </div>
-        <Skeleton className="mt-6 h-12 w-full" />
-        <Skeleton className="mt-3 h-12 w-full" />
+        <div className="calculation-progress-bar relative mt-6 h-1.5 overflow-hidden rounded-full bg-primary-100 before:absolute before:inset-y-0 before:left-0 before:w-1/2 before:rounded-full before:bg-primary-500" />
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {["Income", "Reduction", "Credits", "Payable"].map((label, index) => (
+            <div
+              className="calculation-reveal rounded-lg border border-grey-300 bg-white p-3"
+              key={label}
+              style={{ animationDelay: `${index * 90}ms` }}
+            >
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="mt-3 h-6 w-28 bg-primary-100" />
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 space-y-2">
+          {Array.from({ length: 5 }, (_, index) => (
+            <div
+              className="calculation-reveal flex items-center justify-between gap-4 border-b border-grey-200 pb-2"
+              key={index}
+              style={{ animationDelay: `${260 + index * 70}ms` }}
+            >
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-5 w-24 bg-primary-100" />
+            </div>
+          ))}
+        </div>
         <Skeleton className="mt-5 h-11 w-full sm:w-40" />
       </div>
     </SkeletonRegion>

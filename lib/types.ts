@@ -34,6 +34,8 @@ export type TaxpayerProfile = {
   registration_status: string;
   rdo: string | null;
   filing_frequency: string;
+  /** Taxable year the 8% option was elected for; null means graduated rates. */
+  eight_percent_elected_year: number | null;
 };
 
 /** Identity as held by eGovPH — the source of truth for name, contact and TIN. */
