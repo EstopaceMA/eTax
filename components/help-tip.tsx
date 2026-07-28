@@ -7,6 +7,7 @@ import { HelpCircle } from "lucide-react";
 const TOOLTIP_WIDTH = 288;
 const VIEWPORT_GUTTER = 16;
 const GAP = 8;
+const HELP_TIP_OPEN_EVENT = "etax-help-tip-open";
 
 type TooltipPosition = {
   left: number;
@@ -44,8 +45,11 @@ export function HelpTip({ label, text }: { label: string; text: string }) {
       return;
     }
 
+    window.dispatchEvent(
+      new CustomEvent(HELP_TIP_OPEN_EVENT, { detail: { tooltipId } }),
+    );
     setPosition(positionFromTrigger(button));
-  }, []);
+  }, [tooltipId]);
 
   const hide = useCallback(() => {
     setPosition(null);
@@ -81,20 +85,36 @@ export function HelpTip({ label, text }: { label: string; text: string }) {
       return;
     }
 
-    const reposition = () => {
-      if (buttonRef.current) {
-        setPosition(positionFromTrigger(buttonRef.current));
+    const closeOnScrollOrResize = () => {
+      hide();
+      buttonRef.current?.blur();
+    };
+
+    window.addEventListener("scroll", closeOnScrollOrResize, true);
+    window.addEventListener("resize", closeOnScrollOrResize);
+
+    return () => {
+      window.removeEventListener("scroll", closeOnScrollOrResize, true);
+      window.removeEventListener("resize", closeOnScrollOrResize);
+    };
+  }, [hide, position]);
+
+  useLayoutEffect(() => {
+    const closeWhenAnotherTipOpens = (event: Event) => {
+      if (
+        event instanceof CustomEvent &&
+        event.detail?.tooltipId !== tooltipId
+      ) {
+        hide();
       }
     };
 
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    window.addEventListener(HELP_TIP_OPEN_EVENT, closeWhenAnotherTipOpens);
 
     return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      window.removeEventListener(HELP_TIP_OPEN_EVENT, closeWhenAnotherTipOpens);
     };
-  }, [position]);
+  }, [hide, tooltipId]);
 
   return (
     <>
