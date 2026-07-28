@@ -17,12 +17,20 @@ import type {
 } from "@/lib/agentic/types";
 import {
   filingQuarters,
+  filingYear,
   getQuarterMeta,
   isFilingPeriodOpen,
   type FilingQuarter,
 } from "@/lib/filing-periods";
 import { createClient } from "@/lib/supabase/server";
 import type { FilingObligation, IncomeRecordUpload } from "@/lib/types";
+import { computeQuarterly1701Q } from "@/lib/tax/1701q-compute";
+import { gather1701QInputs } from "@/lib/tax/1701q-inputs";
+import {
+  getEightPercentRule,
+  type EightPercentRuleConfig,
+  type TaxRuleSet,
+} from "@/lib/tax/rule-sets";
 
 const taskMetadata: Record<
   AgenticStep,
@@ -174,7 +182,8 @@ async function prepareComputation(
   userId: string,
   obligation: FilingObligation,
   records: IncomeRecordUpload[],
-  formCode: "1701Q" | "1701A",
+  quarterMeta: { quarter: number; formCode: "1701Q" | "1701A"; dueDate: string },
+  activeRule: TaxRuleSet<EightPercentRuleConfig> | null,
 ) {
   if (
     records.length === 0 ||
@@ -185,19 +194,104 @@ async function prepareComputation(
     return { computation: null, draft: null };
   }
 
-  const input = {
-    period: obligation.period,
-    recordIds: records.map(({ id }) => id).sort(),
-    totalIncome: records.reduce((sum, record) => sum + Number(record.total_income), 0),
-  };
+  let ruleId: string;
+  let ruleVersion: string;
+  let input: Record<string, unknown>;
+  let outputSnapshot: Record<string, unknown>;
+  let trace: Array<{ label: string; value: string | number }>;
+  let assumptions: string[];
+  let warnings: string[];
+
+  // 1701Q (quarters 1-3): the real 8% computation, per RA 10963 (TRAIN) / RR 8-2018.
+  // 1701A (quarter 4, annual) has no verified computation yet, so it still runs
+  // the illustrative demo rule below rather than an unresearched guess.
+  if (quarterMeta.formCode === "1701Q" && activeRule) {
+    const { data: taxpayerProfileRow } = await supabase
+      .from("taxpayer_profiles")
+      .select("taxpayer_type, eight_percent_elected_year")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const gathered = await gather1701QInputs({
+      userId,
+      quarter: quarterMeta.quarter as 1 | 2 | 3,
+      taxpayerType:
+        (taxpayerProfileRow as { taxpayer_type?: string } | null)?.taxpayer_type ?? null,
+      eightPercentElectedYear:
+        (taxpayerProfileRow as { eight_percent_elected_year?: number } | null)
+          ?.eight_percent_elected_year ?? null,
+      taxYear: filingYear,
+    });
+    const result = computeQuarterly1701Q(gathered, activeRule.configuration);
+
+    ruleId = activeRule.id;
+    ruleVersion = activeRule.version;
+    input = {
+      period: obligation.period,
+      recordIds: records.map(({ id }) => id).sort(),
+      totalIncome: gathered.grossThisQuarter,
+      ...gathered,
+    };
+    outputSnapshot = {
+      ...result,
+      amountPayable: result.taxPayable,
+      currency: activeRule.configuration.currency,
+    };
+    trace = [
+      { label: "Covered period", value: obligation.period },
+      { label: "Confirmed income records", value: records.length },
+      { label: "Sales/receipts this quarter (Item 47)", value: result.salesRevenuesReceiptsFees },
+      {
+        label: "Taxable income, prior quarters (Item 50)",
+        value: result.taxableIncomePreviousQuarters,
+      },
+      { label: "Cumulative taxable income (Item 51)", value: result.cumulativeTaxableIncome },
+      { label: "Allowable reduction (Item 52)", value: result.allowableReduction },
+      { label: "Taxable income to date (Item 53)", value: result.taxableIncomeToDate },
+      { label: "Tax rate", value: `${(Number(activeRule.configuration.rate) * 100).toFixed(0)}%` },
+      { label: "Tax due (Item 54)", value: result.taxDue },
+      {
+        label: "Credited: prior quarters paid (Item 56)",
+        value: result.taxPaymentsPreviousQuarters,
+      },
+      { label: "Tax payable (Item 63)", value: result.taxPayable },
+      {
+        label: "Rounding",
+        value:
+          activeRule.configuration.rounding === "whole_peso"
+            ? "PHP, whole pesos"
+            : "PHP, 2 decimal places",
+      },
+    ];
+    assumptions = [
+      ...result.assumptions,
+      `Computed under ${activeRule.title} (${activeRule.sourceTitle}).`,
+    ];
+    warnings = result.warnings;
+  } else {
+    const demoInput = {
+      period: obligation.period,
+      recordIds: records.map(({ id }) => id).sort(),
+      totalIncome: records.reduce((sum, record) => sum + Number(record.total_income), 0),
+    };
+    const result = computeDemoLiability(demoInput);
+
+    ruleId = DEMO_RULE_ID;
+    ruleVersion = DEMO_RULE_VERSION;
+    input = demoInput;
+    outputSnapshot = { amountPayable: result.amountPayable, currency: result.currency };
+    trace = result.trace;
+    assumptions = result.assumptions;
+    warnings = result.warnings;
+  }
+
   const inputHash = stableHash(input);
-  const result = computeDemoLiability(input);
   const { data: existingComputation } = await supabase
     .from("computation_runs")
     .select("*")
     .eq("user_id", userId)
     .eq("filing_obligation_id", obligation.id)
-    .eq("rule_set_id", DEMO_RULE_ID)
+    .eq("rule_set_id", ruleId)
     .eq("input_hash", inputHash)
     .maybeSingle();
 
@@ -209,16 +303,13 @@ async function prepareComputation(
       .insert({
         user_id: userId,
         filing_obligation_id: obligation.id,
-        rule_set_id: DEMO_RULE_ID,
+        rule_set_id: ruleId,
         input_hash: inputHash,
         input_snapshot: input,
-        output_snapshot: {
-          amountPayable: result.amountPayable,
-          currency: result.currency,
-        },
-        trace: result.trace,
-        assumptions: result.assumptions,
-        warnings: result.warnings,
+        output_snapshot: outputSnapshot,
+        trace,
+        assumptions,
+        warnings,
       })
       .select("*")
       .single();
@@ -237,11 +328,16 @@ async function prepareComputation(
       targetId: computation.id,
       eventData: {
         inputHash,
-        ruleId: DEMO_RULE_ID,
-        ruleVersion: DEMO_RULE_VERSION,
+        ruleId,
+        ruleVersion,
       },
     });
   }
+
+  const result = {
+    amountPayable: computation.output_snapshot.amountPayable,
+    currency: computation.output_snapshot.currency,
+  };
 
   const { data: existingDraft } = await supabase
     .from("return_drafts")
@@ -263,7 +359,7 @@ async function prepareComputation(
         review_snapshot: {
           amountPayable: result.amountPayable,
           currency: result.currency,
-          form: formCode,
+          form: quarterMeta.formCode,
           period: obligation.period,
           recordCount: records.length,
           totalIncome: input.totalIncome,
@@ -274,11 +370,20 @@ async function prepareComputation(
             status: "pass",
             message: "Every included income record has a confirmed amount.",
           },
-          {
-            code: "demo_rule",
-            status: "warning",
-            message: "This draft uses an illustrative 6% pilot rule, not a production tax rule.",
-          },
+          ruleId === DEMO_RULE_ID
+            ? {
+                code: "demo_rule",
+                status: "warning" as const,
+                message:
+                  "This draft uses an illustrative 6% pilot rule, not a production tax rule.",
+              }
+            : {
+                code: "rule_applied",
+                status: warnings.length > 0 ? ("warning" as const) : ("pass" as const),
+                message:
+                  warnings[0] ??
+                  `Computed under ${ruleVersion} of the 8% income tax option (RA 10963 / RR 8-2018).`,
+              },
         ],
       })
       .select("*")
@@ -348,6 +453,10 @@ export async function refreshAgenticPlan(
 
   const quarter = getQuarterMeta(selectedQuarter);
   const periodOpen = isFilingPeriodOpen(quarter.opensOn);
+  // 1701A (annual, quarter 4) has no verified computation yet; only 1701Q
+  // quarters look up the real 8% rule.
+  const activeRule =
+    quarter.formCode === "1701Q" ? await getEightPercentRule(quarter.dueDate) : null;
   const { data: obligationData, error: obligationError } = await supabase
     .from("filing_obligations")
     .select("*")
@@ -422,7 +531,8 @@ export async function refreshAgenticPlan(
         user.id,
         obligation,
         records,
-        quarter.formCode,
+        quarter,
+        activeRule,
       )
     : { computation: null, draft: null };
   const paymentIntent = paymentIntentResult.data?.[0] as
@@ -538,13 +648,21 @@ export async function refreshAgenticPlan(
     tasks,
     computation,
     draft,
-    rule: {
-      id: DEMO_RULE_ID,
-      version: DEMO_RULE_VERSION,
-      title: `${quarter.period} illustrative six-percent liability`,
-      sourceTitle: "eTaxPH controlled pilot fixture - not an official tax authority",
-      status: "demo",
-    },
+    rule: activeRule
+      ? {
+          id: activeRule.id,
+          version: activeRule.version,
+          title: `${quarter.period} — ${activeRule.title}`,
+          sourceTitle: activeRule.sourceTitle,
+          status: "active",
+        }
+      : {
+          id: DEMO_RULE_ID,
+          version: DEMO_RULE_VERSION,
+          title: `${quarter.period} illustrative six-percent liability`,
+          sourceTitle: "eTaxPH controlled pilot fixture - not an official tax authority",
+          status: "demo",
+        },
     progress: Math.round((completedCount / agenticSteps.length) * 100),
     period: {
       quarter: selectedQuarter,

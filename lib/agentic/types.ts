@@ -1,6 +1,7 @@
 import type { AgentTaskState, AgenticStep } from "@/lib/agentic/domain";
 import type { FilingQuarter } from "@/lib/filing-periods";
 import type { FilingObligation, IncomeRecordUpload } from "@/lib/types";
+import type { QuarterlyComputation } from "@/lib/tax/1701q-compute";
 
 export type AgentTask = {
   id: string;
@@ -29,15 +30,24 @@ export type ComputationRun = {
   filing_obligation_id: string;
   rule_set_id: string;
   input_hash: string;
+  /**
+   * Always carries period/totalIncome/recordIds; the real 1701Q rule adds the
+   * gathered quarterly inputs (quarter, grossPriorQuarters, taxPaidPriorQuarters,
+   * taxpayerCategory, eightPercentElected) alongside them.
+   */
   input_snapshot: {
     period: string;
     totalIncome: number;
     recordIds: string[];
-  };
+  } & Record<string, unknown>;
+  /**
+   * Always carries amountPayable/currency; the real 1701Q rule adds every
+   * Schedule II/III line (47-63) alongside them.
+   */
   output_snapshot: {
     amountPayable: number;
     currency: "PHP";
-  };
+  } & Partial<QuarterlyComputation>;
   trace: Array<{ label: string; value: string | number }>;
   assumptions: string[];
   warnings: string[];
@@ -74,7 +84,7 @@ export type AgenticPlan = {
     version: string;
     title: string;
     sourceTitle: string;
-    status: "demo";
+    status: "demo" | "active";
   };
   progress: number;
   period: {
