@@ -275,3 +275,30 @@ export function AgenticTimelineSkeleton() {
     </SkeletonRegion>
   );
 }
+
+export function AgenticSessionListSkeleton() {
+  return (
+    <SkeletonRegion className="flex min-h-0 flex-1 flex-col" label="Loading filing chats">
+      <Skeleton className="h-11 w-full bg-grey-300" />
+      <Skeleton className="mb-3 mt-6 h-3 w-14" />
+      <div className="space-y-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <div className="rounded-lg px-3 py-2.5" key={index}>
+            <Skeleton className="h-4 w-4/5 bg-grey-300" />
+            <Skeleton className="mt-2 h-3 w-3/5 bg-grey-300" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="mb-3 mt-5 h-3 w-16" />
+      <div className="space-y-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <div className="rounded-lg px-3 py-2.5" key={index}>
+            <Skeleton className="h-4 w-3/4 bg-grey-300" />
+            <Skeleton className="mt-2 h-3 w-1/2 bg-grey-300" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="mt-auto h-24 w-full bg-primary-100" />
+    </SkeletonRegion>
+  );
+}

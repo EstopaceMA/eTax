@@ -15,8 +15,24 @@ import {
   isAgenticAnswerTopic,
   quarterFromAgenticRequest,
 } from "@/lib/agentic/presentation";
+import {
+  AgenticSessionConflictError,
+  AgenticSessionNotFoundError,
+  appendAgenticSessionEvent,
+  appendPeriodSelection,
+  automaticSessionTitle,
+  buildPeriodSelectionBlock,
+  createAgenticChatSession,
+  getAgenticChatSession,
+  loadAgenticSessionDetail,
+  reconcileAgenticChatSession,
+  selectAgenticSessionPeriod,
+} from "@/lib/agentic/sessions";
 import type { FilingQuarter } from "@/lib/filing-periods";
-import type { AgenticChatHistoryItem } from "@/lib/agentic/types";
+import type {
+  AgenticChatHistoryItem,
+  AgenticSnapshotResponse,
+} from "@/lib/agentic/types";
 
 const maxQuestionLength = 1_500;
 const maxAgenticHistoryItems = 6;
@@ -103,6 +119,36 @@ export async function POST(request: Request) {
     typeof body === "object" && body !== null && "history" in body
       ? parseAgenticHistory(body.history)
       : [];
+  const requestedSessionId =
+    typeof body === "object" &&
+    body !== null &&
+    "sessionId" in body &&
+    typeof body.sessionId === "string"
+      ? body.sessionId
+      : null;
+  const requestedSessionVersion =
+    typeof body === "object" &&
+    body !== null &&
+    "sessionVersion" in body &&
+    typeof body.sessionVersion === "number" &&
+    Number.isInteger(body.sessionVersion)
+      ? body.sessionVersion
+      : null;
+  const requestedContextId =
+    typeof body === "object" &&
+    body !== null &&
+    "activeContextId" in body &&
+    (typeof body.activeContextId === "string" || body.activeContextId === null)
+      ? body.activeContextId
+      : null;
+  const clientRequestId =
+    typeof body === "object" &&
+    body !== null &&
+    "clientRequestId" in body &&
+    typeof body.clientRequestId === "string" &&
+    /^[0-9a-f-]{36}$/i.test(body.clientRequestId)
+      ? body.clientRequestId
+      : null;
 
   if (!question) {
     return NextResponse.json({ error: "Enter a question first." }, { status: 400 });
@@ -117,45 +163,184 @@ export async function POST(request: Request) {
 
   try {
     if (requestedMode === "agentic") {
+      if (!clientRequestId) {
+        return NextResponse.json(
+          { error: "Use a valid request identifier for this filing chat." },
+          { status: 400 },
+        );
+      }
+
+      await ensureWorkspace();
+      let session = requestedSessionId
+        ? await getAgenticChatSession(user.id, requestedSessionId)
+        : await createAgenticChatSession({
+            title: automaticSessionTitle(question),
+            userId: user.id,
+          });
+
+      if (
+        requestedSessionId &&
+        (requestedSessionVersion !== session.version ||
+          requestedContextId !== session.active_context_id)
+      ) {
+        throw new AgenticSessionConflictError(
+          "This filing chat changed. Reload it and try again.",
+        );
+      }
+
+      const userEvent = await appendAgenticSessionEvent({
+        clientRequestId,
+        content: question,
+        contextId: session.active_context_id,
+        kind: "user_text",
+        quarter: session.active_quarter,
+        role: "user",
+        sessionId: session.id,
+        userId: user.id,
+      });
       const intent = classifyAgenticChatRequest(question, recentHistory);
 
       if (intent.kind === "switch_to_ask") {
+        const answer =
+          "That sounds like a tax question rather than a filing task. Switch to Ask eTax for an explanation.";
+        await appendAgenticSessionEvent({
+          content: answer,
+          contextId: session.active_context_id,
+          kind: "switch_to_ask",
+          quarter: session.active_quarter,
+          replyToEventId: userEvent.id,
+          role: "assistant",
+          sessionId: session.id,
+          userId: user.id,
+        });
         return NextResponse.json({
-          answer:
-            "That sounds like a tax question rather than a filing task. Switch to Ask eTax for an explanation.",
+          answer,
           kind: "switch_to_ask",
           mode: "agentic",
+          sessionDetail: await loadAgenticSessionDetail(user.id, session.id),
           switchToAsk: true,
         });
       }
 
-      await ensureWorkspace();
       const inferredQuarter = quarterFromAgenticRequest(question) as FilingQuarter | null;
-      const plan = await refreshAgenticPlan(inferredQuarter ?? requestedQuarter);
-      const snapshot = buildAgenticSnapshot(plan);
+
+      if (!session.active_quarter && !inferredQuarter) {
+        await appendPeriodSelection({
+          replyToEventId: userEvent.id,
+          sessionId: session.id,
+          userId: user.id,
+        });
+        return NextResponse.json({
+          answer: "Choose a filing period to continue.",
+          block: buildPeriodSelectionBlock(),
+          kind: "period_selection",
+          sessionDetail: await loadAgenticSessionDetail(user.id, session.id),
+        });
+      }
+
+      let selectedQuarter = inferredQuarter ?? session.active_quarter ?? requestedQuarter;
+      let selectedSnapshot: AgenticSnapshotResponse | null = null;
+
+      if (
+        selectedQuarter !== session.active_quarter ||
+        !session.active_context_id
+      ) {
+        const selected = await selectAgenticSessionPeriod({
+          expectedVersion: session.version,
+          quarter: selectedQuarter,
+          sessionId: session.id,
+          userId: user.id,
+        });
+        session = selected.session;
+        selectedSnapshot = selected.snapshot;
+      }
+
+      selectedQuarter = session.active_quarter ?? selectedQuarter;
+      const snapshot =
+        selectedSnapshot ??
+        buildAgenticSnapshot(await refreshAgenticPlan(selectedQuarter));
+      const plan = snapshot.plan;
 
       if (intent.kind === "data") {
+        const dataAnswer = buildAgenticDataAnswer(plan, intent.topic);
+        await appendAgenticSessionEvent({
+          content: dataAnswer.answer,
+          contextId: session.active_context_id,
+          facts: dataAnswer.facts,
+          kind: "assistant_data",
+          quarter: selectedQuarter,
+          replyToEventId: userEvent.id,
+          role: "assistant",
+          sessionId: session.id,
+          topic: intent.topic,
+          userId: user.id,
+        });
+        const sessionDetail = await reconcileAgenticChatSession({
+          activeContextId: session.active_context_id,
+          expectedVersion: session.version,
+          sessionId: session.id,
+          snapshot,
+          userId: user.id,
+        });
         return NextResponse.json({
           ...snapshot,
-          ...buildAgenticDataAnswer(plan, intent.topic),
+          ...dataAnswer,
           kind: "data",
+          sessionDetail,
         });
       }
 
       if (intent.kind === "courtesy") {
+        const narration =
+          plan.progress === 100
+            ? "You’re welcome. This filing journey is complete, and its verified records remain available above."
+            : `You’re welcome. Your progress for ${plan.period.period} is preserved whenever you’re ready to continue.`;
+        await appendAgenticSessionEvent({
+          content: narration,
+          contextId: session.active_context_id,
+          kind: "assistant_text",
+          quarter: selectedQuarter,
+          replyToEventId: userEvent.id,
+          role: "assistant",
+          sessionId: session.id,
+          userId: user.id,
+        });
+        const sessionDetail = await reconcileAgenticChatSession({
+          activeContextId: session.active_context_id,
+          expectedVersion: session.version,
+          sessionId: session.id,
+          snapshot,
+          userId: user.id,
+        });
         return NextResponse.json({
           ...snapshot,
           kind: "workflow",
-          narration:
-            plan.progress === 100
-              ? "You’re welcome. This filing journey is complete, and its verified records remain available above."
-              : `You’re welcome. Your progress for ${plan.period.period} is preserved whenever you’re ready to continue.`,
+          narration,
+          sessionDetail,
         });
       }
 
+      await appendAgenticSessionEvent({
+        content: snapshot.narration,
+        contextId: session.active_context_id,
+        kind: "assistant_text",
+        quarter: selectedQuarter,
+        replyToEventId: userEvent.id,
+        role: "assistant",
+        sessionId: session.id,
+        userId: user.id,
+      });
+      const sessionDetail = await reconcileAgenticChatSession({
+        activeContextId: session.active_context_id,
+        expectedVersion: session.version,
+        sessionId: session.id,
+        snapshot,
+        userId: user.id,
+      });
       return NextResponse.json({
         ...snapshot,
         kind: "workflow",
+        sessionDetail,
       });
     }
 
@@ -216,6 +401,14 @@ export async function POST(request: Request) {
       ],
     });
   } catch (error) {
+    if (error instanceof AgenticSessionNotFoundError) {
+      return NextResponse.json({ error: "Filing chat not found." }, { status: 404 });
+    }
+
+    if (error instanceof AgenticSessionConflictError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+
     console.error("eTax assistant request failed", error);
 
     return NextResponse.json(

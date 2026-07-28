@@ -82,48 +82,52 @@ test("agentic filing is a main workspace, not an assistant tab", async () => {
   assert.doesNotMatch(agenticChat, /JourneyProgress/);
 });
 
-test("agentic filing renders an accessible cumulative timeline", async () => {
+test("agentic filing renders an accessible unified session transcript", async () => {
   const agenticChat = await source("components/agentic-chat.tsx");
+  const workflowMessage = await source("components/agentic-workflow-message.tsx");
 
-  assert.match(agenticChat, /snapshot\.timeline\.map/);
-  assert.match(agenticChat, /aria-expanded=\{expanded\}/);
-  assert.match(agenticChat, /expanded=\{!collapsedStages\.has\(item\.stage\)\}/);
-  assert.match(agenticChat, /eTaxPHCheckIcon\.svg/);
+  assert.match(agenticChat, /detail\.events\.map/);
+  assert.match(agenticChat, /event\.kind === "workflow_stage"/);
+  assert.match(agenticChat, /activeWorkflowEventId/);
+  assert.match(workflowMessage, /aria-expanded=\{expanded\}/);
+  assert.match(workflowMessage, /eTaxPHCheckIcon\.svg/);
   assert.match(agenticChat, /prefers-reduced-motion: reduce/);
-  assert.match(agenticChat, /latestStageRef\.current\?\.focus/);
+  assert.doesNotMatch(agenticChat, /FilingPeriodMenu|Ask about this filing/);
 });
 
 test("agentic conversation follows the timeline and uses a fixed bottom composer", async () => {
   const agenticChat = await source("components/agentic-chat.tsx");
-  const timelineIndex = agenticChat.indexOf("snapshot.timeline.map");
-  const conversationIndex = agenticChat.indexOf("<AgenticConversation");
-  const composerIndex = agenticChat.indexOf("<form", conversationIndex);
+  const transcriptIndex = agenticChat.indexOf("detail.events.map");
+  const composerIndex = agenticChat.lastIndexOf("<form");
 
-  assert.ok(timelineIndex > -1);
-  assert.ok(conversationIndex > timelineIndex);
-  assert.ok(composerIndex > conversationIndex);
-  assert.match(agenticChat.slice(composerIndex), /shrink-0 border-t/);
-  assert.match(agenticChat, /messages\.slice\(-6\)/);
+  assert.ok(transcriptIndex > -1);
+  assert.ok(composerIndex > transcriptIndex);
+  assert.match(agenticChat.slice(composerIndex), /className="shrink-0 px-3 pb-3 sm:px-6"/);
+  assert.match(agenticChat, /\.slice\(-6\)/);
   assert.match(agenticChat, /content\.slice\(0, 500\)/);
 });
 
-test("agentic answers refresh authenticated data without persisting chat history", async () => {
+test("agentic answers refresh authenticated data and persist controlled session events", async () => {
   const route = await source("app/api/assistant/route.ts");
   const agenticChat = await source("components/agentic-chat.tsx");
+  const sessions = await source("lib/agentic/sessions.ts");
 
-  assert.match(route, /refreshAgenticPlan\(inferredQuarter \?\? requestedQuarter\)/);
+  assert.match(route, /appendAgenticSessionEvent/);
+  assert.match(route, /selectAgenticSessionPeriod/);
+  assert.match(route, /sessionDetail/);
   assert.match(route, /maxAgenticHistoryItems = 6/);
   assert.match(route, /buildAgenticDataAnswer/);
-  assert.doesNotMatch(agenticChat, /localStorage\.setItem\([^,]*message/i);
+  assert.match(sessions, /eventPageSize = 50/);
+  assert.doesNotMatch(agenticChat, /localStorage|periodStorageKey/);
 });
 
-test("agentic filing hydrates with deterministic period markup", async () => {
+test("agentic filing restores sessions without browser period state", async () => {
   const agenticChat = await source("components/agentic-chat.tsx");
 
-  assert.match(agenticChat, /useState<FilingQuarter>\(2\)/);
-  assert.doesNotMatch(agenticChat, /useState<FilingQuarter>\(\(\) =>/);
-  assert.match(agenticChat, /if \(!clientReady\) \{\s+return;/);
-  assert.match(agenticChat, /clientReady\s+\? new Date\(\)/);
+  assert.match(agenticChat, /selectedSessionId/);
+  assert.match(agenticChat, /fetchSessionDetail\(selected\)/);
+  assert.match(agenticChat, /Which filing period would you like to work on/);
+  assert.doesNotMatch(agenticChat, /localStorage|clientReady/);
 });
 
 test("assistant surfaces use the branded chatbot icon", async () => {

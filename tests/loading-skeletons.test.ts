@@ -39,19 +39,19 @@ test("authenticated data routes use layout-matched loading boundaries", async ()
   }
 });
 
-test("agentic filing skeletons only when authoritative content is unavailable", async () => {
+test("agentic filing skeletons initial and newly selected session content", async () => {
   const agenticChat = await source("components/agentic-chat.tsx");
   const skeletons = await source("components/loading-skeletons.tsx");
 
-  assert.match(agenticChat, /const showWorkflowSkeleton = isLoading && !snapshot/);
   assert.match(
     agenticChat,
-    /\{showWorkflowSkeleton \? <AgenticTimelineSkeleton \/> : null\}/,
+    /\{openingSessionId \|\| \(isLoading && !detail\) \? \(/,
   );
-  assert.match(agenticChat, /\{plan && snapshot \? \(/);
+  assert.match(agenticChat, /\{!openingSessionId && detail \? \(/);
   assert.match(agenticChat, /aria-busy=\{isLoading\}/);
   assert.doesNotMatch(agenticChat, /Reconciling this period/);
   assert.match(skeletons, /export function AgenticTimelineSkeleton\(\)/);
+  assert.match(skeletons, /export function AgenticSessionListSkeleton\(\)/);
 });
 
 test("independent server data requests begin in parallel", async () => {

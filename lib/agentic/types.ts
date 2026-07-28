@@ -104,6 +104,16 @@ export type AgenticPlan = {
 };
 
 export type AgenticBlock =
+  | {
+      type: "period_selection";
+      periods: Array<{
+        quarter: FilingQuarter;
+        label: string;
+        period: string;
+        formCode: "1701Q" | "1701A";
+        isOpen: boolean;
+      }>;
+    }
   | { type: "locked_period"; opensOn: string; reason: string }
   | { type: "record_upload" }
   | { type: "record_confirmation"; recordIds: string[] }
@@ -156,9 +166,80 @@ export type AgenticChatHistoryItem = {
   topic?: AgenticAnswerTopic;
 };
 
+export type AgenticSessionSummary = {
+  id: string;
+  title: string;
+  activeQuarter: FilingQuarter | null;
+  activeContextId: string | null;
+  activePeriod: string | null;
+  filingStatus: string | null;
+  isPinned: boolean;
+  pinnedAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  lastOpenedAt: string;
+};
+
+type AgenticSessionEventBase = {
+  id: string;
+  sequenceNumber: number;
+  content: string;
+  contextId: string | null;
+  quarter: FilingQuarter | null;
+  createdAt: string;
+};
+
+export type AgenticSessionEvent =
+  | (AgenticSessionEventBase & {
+      role: "user";
+      kind: "user_text";
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "assistant_text";
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "assistant_data";
+      facts: AgenticAnswerFact[];
+      topic: AgenticAnswerTopic;
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "switch_to_ask";
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "period_selection";
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "period_context";
+    })
+  | (AgenticSessionEventBase & {
+      role: "assistant";
+      kind: "workflow_stage";
+      stage: AgenticStage;
+      snapshotVersion: string;
+    });
+
+export type AgenticSessionSnapshot = {
+  quarter: FilingQuarter;
+  snapshot: AgenticSnapshotResponse;
+};
+
+export type AgenticSessionDetail = {
+  session: AgenticSessionSummary;
+  events: AgenticSessionEvent[];
+  snapshots: AgenticSessionSnapshot[];
+  olderCursor: number | null;
+};
+
 export type AgenticChatResponse =
   | (AgenticSnapshotResponse & {
       kind: "workflow";
+      sessionDetail: AgenticSessionDetail;
     })
   | (AgenticSnapshotResponse & {
       kind: "data";
@@ -166,9 +247,17 @@ export type AgenticChatResponse =
       facts: AgenticAnswerFact[];
       sourcePeriod: string;
       topic: AgenticAnswerTopic;
+      sessionDetail: AgenticSessionDetail;
     })
   | {
       kind: "switch_to_ask";
       answer: string;
       switchToAsk: true;
+      sessionDetail: AgenticSessionDetail;
+    }
+  | {
+      kind: "period_selection";
+      answer: string;
+      block: Extract<AgenticBlock, { type: "period_selection" }>;
+      sessionDetail: AgenticSessionDetail;
     };
