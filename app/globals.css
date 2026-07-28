@@ -1,8 +1,66 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYREGULAR.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYMEDIUM.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYMEDIUM.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYBOLD.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 650;
+}
+
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYBOLD.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "SF Pro Display";
+  src: url("/SF%20Pro%20Display%20Font/SFPRODISPLAYBOLD.OTF")
+    format("opentype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 750;
+}
+
 @theme {
-  --font-sans: var(--font-inter), "Helvetica", "Arial", sans-serif;
-  --font-display: var(--font-inter), "Helvetica", "Arial", sans-serif;
+  --font-sans:
+    "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Helvetica", "Arial", sans-serif;
+  --font-display:
+    "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Helvetica", "Arial", sans-serif;
   --font-weight-bold: 650;
   --font-weight-extrabold: 700;
   --font-weight-black: 750;
@@ -44,7 +102,9 @@ body {
   min-height: 100vh;
   background: #f4f6f8;
   color: var(--color-grey-800);
-  font-family: var(--font-inter), "Helvetica", "Arial", sans-serif;
+  font-family:
+    "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Helvetica", "Arial", sans-serif;
 }
 
 .protected-main:has(> [data-full-bleed="true"]) {
