@@ -8,7 +8,6 @@ import {
   CreditCard,
   FileCheck2,
   FileText,
-  HelpCircle,
   ShieldCheck,
 } from "lucide-react";
 import {
@@ -21,6 +20,7 @@ import {
   PaymentProofForm,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
+import { HelpTip } from "@/components/help-tip";
 import { PdfDownloadOptions } from "@/components/pdf-download-options";
 import {
   DeleteIncomeRecordForm,
@@ -185,24 +185,6 @@ function traceBadgeClass(label: string) {
   }
 
   return "border-grey-300 bg-white text-grey-700";
-}
-
-function HelpTip({ label, text }: { label: string; text: string }) {
-  return (
-    <span className="group/help relative inline-flex shrink-0 align-middle">
-      <span
-        aria-label={`${label}: ${text}`}
-        className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-        role="button"
-        tabIndex={0}
-      >
-        <HelpCircle aria-hidden size={14} />
-      </span>
-      <span className="help-card pointer-events-none absolute left-1/2 top-7 z-50 hidden w-72 -translate-x-1/2 rounded-lg px-3 py-2 text-xs font-semibold leading-5 group-focus-within/help:block group-hover/help:block">
-        {text}
-      </span>
-    </span>
-  );
 }
 
 function ComputationHelp() {
