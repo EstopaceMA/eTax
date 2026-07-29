@@ -21,12 +21,52 @@ type NavigationItem = {
   icon: LucideIcon | "chatbot";
 };
 
+// Named rather than positional: the lineups below diverge, and indexing one
+// array from the other is what previously dropped /filing from mobile.
+const dashboard: NavigationItem = {
+  href: "/dashboard",
+  label: "Home",
+  desktopLabel: "Dashboard",
+  icon: LayoutDashboard,
+};
+const capture: NavigationItem = {
+  href: "/capture",
+  label: "Capture",
+  desktopLabel: "Add income record",
+  icon: Camera,
+};
+const filing: NavigationItem = {
+  href: "/filing",
+  label: "Filing",
+  desktopLabel: "Filing tracker",
+  icon: FileCheck2,
+};
+const documents: NavigationItem = {
+  href: "/documents",
+  label: "Docs",
+  desktopLabel: "Documents",
+  icon: ClipboardCheck,
+};
+const deadlines: NavigationItem = {
+  href: "/deadlines",
+  label: "Dates",
+  desktopLabel: "Deadlines",
+  icon: CalendarDays,
+};
+const agentic: NavigationItem = {
+  href: "/agentic",
+  label: "Agent",
+  desktopLabel: "Agentic filing",
+  icon: "chatbot",
+};
+
 const desktopNavItems: NavigationItem[] = [
-  { href: "/dashboard", label: "Home", desktopLabel: "Dashboard", icon: LayoutDashboard },
-  { href: "/documents", label: "Docs", desktopLabel: "Documents", icon: ClipboardCheck },
-  { href: "/deadlines", label: "Dates", desktopLabel: "Deadlines", icon: CalendarDays },
-  { href: "/filing", label: "File", desktopLabel: "Filing tracker", icon: FileCheck2 },
-  { href: "/agentic", label: "Agent", desktopLabel: "Agentic filing", icon: "chatbot" },
+  dashboard,
+  capture,
+  filing,
+  documents,
+  deadlines,
+  agentic,
 ];
 
 /**
@@ -36,14 +76,12 @@ const desktopNavItems: NavigationItem[] = [
  * hero already leads with the quarter's due date.
  */
 const mobileNavItems = [
-  desktopNavItems[0], // Home
-  desktopNavItems[3], // Filing
+  dashboard,
+  filing,
   "capture" as const,
-  desktopNavItems[1], // Docs
-  desktopNavItems[4], // Agent
+  documents,
+  agentic,
 ];
-
-const captureHref = "/capture";
 
 function NavigationIcon({
   icon,
@@ -125,14 +163,14 @@ export function MobileNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
       {mobileNavItems.map((item) => {
         if (item === "capture") {
-          const active = isActive(pathname, captureHref);
+          const active = isActive(pathname, capture.href);
 
           return (
             <div className="relative flex min-h-11 items-end justify-center" key="capture">
               <Link
                 aria-label="Capture an income record"
                 className="group relative -top-5 flex flex-col items-center rounded-lg text-[10px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
-                href={captureHref}
+                href={capture.href}
               >
                 <span
                   className={cn(

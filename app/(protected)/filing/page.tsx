@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CalendarDays,
+  Camera,
   CheckCircle2,
   ClipboardCheck,
   CreditCard,
@@ -24,9 +25,9 @@ import { PdfDownloadOptions } from "@/components/pdf-download-options";
 import {
   DeleteIncomeRecordForm,
   IncomeRecordTotalForm,
-  IncomeRecordUploadForm,
 } from "@/components/income-record-forms";
 import { StatusBadge } from "@/components/status";
+import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
@@ -393,10 +394,15 @@ export default async function FilingPage({
               Extracted values remain provisional until you confirm them.
             </p>
           </div>
-          <IncomeRecordUploadForm
-            existingFilenames={selectedRecords.map(({ original_filename }) => original_filename)}
-            quarter={selectedQuarter}
-          />
+          {/*
+            Adding a record happens on /capture, which offers both the camera
+            and the file picker. Two upload surfaces for one job read as two
+            different features, so this view links out rather than duplicating.
+          */}
+          <Link className={buttonClass("soft")} href="/capture">
+            <Camera aria-hidden size={18} />
+            Add income record
+          </Link>
           <div className="space-y-3">
             {selectedRecords.map((record) => (
               <article
@@ -460,9 +466,17 @@ export default async function FilingPage({
               </article>
             ))}
             {selectedRecords.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-sm font-semibold text-grey-600">
-                No income records yet. Add at least one file to start the agentic review.
-              </div>
+              <Link
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-center transition hover:border-primary-500 hover:bg-primary-50"
+                href="/capture"
+              >
+                <span className="text-sm font-bold text-grey-800">
+                  No income records yet
+                </span>
+                <span className="text-xs font-semibold text-grey-600">
+                  Add at least one to start the review.
+                </span>
+              </Link>
             ) : null}
           </div>
         </Card>
