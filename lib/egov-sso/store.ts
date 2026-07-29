@@ -2,6 +2,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { EgovSsoProfile } from "@/lib/egov-sso/client";
 import { decryptEgovSsoRow, encryptEgovSsoRow, hashEmail } from "@/lib/egov-sso/pii-fields";
 import { decryptPii } from "@/lib/security/pii-crypto";
+import type { SsoProfile } from "@/lib/types";
+
+/** Decrypted mobile number for a signed-in user, for SMS sends. Null if unset. */
+export async function getSsoMobile(userId: string): Promise<Pick<SsoProfile, "mobile"> | null> {
+  const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from("egov_sso_profiles")
+    .select("mobile")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (!data) {
+    return null;
+  }
+
+  return { mobile: decryptPii(data.mobile) };
+}
 
 export async function saveSsoProfile(profile: EgovSsoProfile) {
   const supabase = createAdminClient();
