@@ -176,22 +176,28 @@ export function DesktopNav() {
 export function MobileNav() {
   const pathname = usePathname();
 
+  // min-h rather than h: box-sizing is border-box, so a fixed height would let
+  // env(safe-area-inset-bottom) eat into the tabs on a notched phone instead of
+  // extending the bar.
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 grid min-h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
       {mobileNavItems.map((item) => {
         if (item === "capture") {
           return (
             <div className="relative flex min-h-11 items-end justify-center" key="capture">
+              {/* Lifted only slightly: a taller lift overlapped the fixed
+                  composer on /agentic and pushed the label out of line with
+                  the other tabs. */}
               <button
                 aria-label="Add an income record"
-                className="group relative -top-5 flex flex-col items-center rounded-lg text-[10px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="group relative -top-2 flex flex-col items-center gap-0.5 rounded-lg text-[10px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
                 onClick={openCapture}
                 type="button"
               >
-                <span className="grid size-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_8px_20px_rgba(7,92,247,0.3)] ring-4 ring-grey-50 transition active:scale-95 motion-reduce:transform-none group-hover:bg-primary-700">
-                  <Camera aria-hidden size={26} strokeWidth={2} />
+                <span className="grid size-12 place-items-center rounded-full bg-primary-500 text-white shadow-[0_6px_16px_rgba(7,92,247,0.3)] ring-4 ring-grey-50 transition active:scale-95 motion-reduce:transform-none group-hover:bg-primary-700">
+                  <Camera aria-hidden size={22} strokeWidth={2} />
                 </span>
-                <span className="mt-1">Capture</span>
+                <span>Capture</span>
               </button>
             </div>
           );
