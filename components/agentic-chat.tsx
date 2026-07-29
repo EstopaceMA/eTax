@@ -1164,18 +1164,10 @@ export function AgenticChat({
     });
   }
 
-  const activeSnapshot = detail?.session.activeQuarter
-    ? snapshotMap.get(detail.session.activeQuarter)
-    : undefined;
   const openingSession =
     sessions.find(({ id }) => id === openingSessionId) ?? null;
   const sessionTitle =
     openingSession?.title ?? detail?.session.title ?? "New filing chat";
-  const sessionSubtitle = openingSession
-    ? "Loading conversation…"
-    : activeSnapshot
-      ? `${activeSnapshot.plan.period.period} · BIR Form ${activeSnapshot.plan.period.formCode}`
-      : "Choose a filing period in the conversation";
 
   const sidebarProps = {
     actionMenuId,
@@ -1238,7 +1230,6 @@ export function AgenticChat({
             <p className="truncate text-lg font-semibold text-grey-800">
               {sessionTitle}
             </p>
-            <p className="truncate text-xs text-grey-500">{sessionSubtitle}</p>
           </div>
           <button
             aria-label="Start a new filing chat"
