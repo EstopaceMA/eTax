@@ -136,14 +136,16 @@ export async function uploadIncomeRecord(formData: FormData) {
   }
 
   if (!(file instanceof File) || file.size === 0) {
-    return;
+    return { error: "No file was selected." } as const;
   }
 
   const supportedDocument =
     file.type.startsWith("image/") || file.type === "application/pdf";
 
   if (!supportedDocument) {
-    return;
+    return {
+      error: "Only photos and PDF files can be read. Try a JPG, PNG or PDF.",
+    } as const;
   }
 
   const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") ?? "jpg";
@@ -156,6 +158,25 @@ export async function uploadIncomeRecord(formData: FormData) {
   const storagePath = `${user.id}/${getPeriodSlug(quarterMeta.period)}/${randomUUID()}-${safeFilename || "income-record"}.${extension}`;
   const uploadBody = Buffer.from(await file.arrayBuffer());
   const contentHash = createHash("sha256").update(uploadBody).digest("hex");
+
+  // Checked before extraction and upload so a repeat costs nothing. Recording
+  // the same document twice would overstate income and the tax payable, and the
+  // capture modal has no record list to compare filenames against client-side.
+  const { data: duplicates } = await supabase
+    .from("income_record_uploads")
+    .select("original_filename")
+    .eq("user_id", user.id)
+    .eq("period", quarterMeta.period)
+    .eq("content_hash", contentHash)
+    .limit(1);
+  const duplicate = duplicates?.[0] as { original_filename: string } | undefined;
+
+  if (duplicate) {
+    return {
+      error: `This file is already recorded for ${quarterMeta.period} as "${duplicate.original_filename}". Adding it again would overstate your income.`,
+    } as const;
+  }
+
   let extractedTotalIncome: number | null = null;
   let extractedText: string | null = null;
 
@@ -249,10 +270,11 @@ export async function uploadIncomeRecord(formData: FormData) {
     },
   });
   await refreshAgenticPlan(quarter);
-  revalidatePath(`/filing?quarter=${quarter}&view=records`);
+  revalidatePath("/records");
   revalidatePath("/filing");
-  revalidatePath("/capture");
   revalidatePath("/dashboard");
+
+  return { ok: true as const, filename: file.name };
 }
 
 export async function updateIncomeRecordTotal(formData: FormData) {
@@ -335,9 +357,8 @@ export async function updateIncomeRecordTotal(formData: FormData) {
     eventData: { totalIncome, verificationState: "provisional" },
   });
   await refreshAgenticPlan(quarter);
-  revalidatePath(`/filing?quarter=${quarter}&view=records`);
+  revalidatePath("/records");
   revalidatePath("/filing");
-  revalidatePath("/capture");
   revalidatePath("/dashboard");
 }
 
@@ -401,8 +422,7 @@ export async function deleteIncomeRecord(formData: FormData) {
     eventData: { storagePath },
   });
   await refreshAgenticPlan(quarter);
-  revalidatePath(`/filing?quarter=${quarter}&view=records`);
+  revalidatePath("/records");
   revalidatePath("/filing");
-  revalidatePath("/capture");
   revalidatePath("/dashboard");
 }

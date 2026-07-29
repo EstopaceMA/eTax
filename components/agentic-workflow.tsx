@@ -110,7 +110,7 @@ export function ConfirmIncomeRecordForm({
   quarter: number;
   record: IncomeRecordUpload;
   /** Where to land after confirming. Defaults to the filing workspace. */
-  returnTo?: "capture";
+  returnTo?: "records";
 }) {
   return (
     <form action={confirmIncomeRecordFormAction} className="grid gap-2">

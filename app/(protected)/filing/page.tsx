@@ -15,17 +15,12 @@ import {
   AgentPlanSummary,
   ApproveHandoffForm,
   ConfirmComputationForm,
-  ConfirmIncomeRecordForm,
   FilingAcknowledgementForm,
   JourneyProgress,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import { HelpTip } from "@/components/help-tip";
 import { PdfDownloadOptions } from "@/components/pdf-download-options";
-import {
-  DeleteIncomeRecordForm,
-  IncomeRecordTotalForm,
-} from "@/components/income-record-forms";
 import { StatusBadge } from "@/components/status";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -37,7 +32,7 @@ import {
   isFilingPeriodOpen,
   parseFilingQuarter,
 } from "@/lib/filing-periods";
-import { formatDate } from "@/lib/utils";
+import { formatDate, peso } from "@/lib/utils";
 
 type FilingView = "records" | "review" | "handoff" | "payment";
 
@@ -387,29 +382,34 @@ export default async function FilingPage({
 
       {selectedView === "records" ? (
         <Card className="space-y-4">
-          <div>
-            <p className="text-xs font-bold uppercase text-primary-700">Evidence</p>
-            <h2 className="mt-1 text-xl font-extrabold text-grey-900">Income records</h2>
-            <p className="mt-1 text-sm leading-6 text-grey-600">
-              Extracted values remain provisional until you confirm them.
-            </p>
-          </div>
           {/*
-            Adding a record happens on /capture, which offers both the camera
-            and the file picker. Two upload surfaces for one job read as two
-            different features, so this view links out rather than duplicating.
+            Read-only here. Records are added and verified on /records, which is
+            visited far more often than a return is filed; this view exists so
+            the evidence behind the computation is at hand while reviewing it.
           */}
-          <Link className={buttonClass("soft")} href="/capture">
-            <Camera aria-hidden size={18} />
-            Add income record
-          </Link>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase text-primary-700">Evidence</p>
+              <h2 className="mt-1 text-xl font-extrabold text-grey-900">Income records</h2>
+              <p className="mt-1 text-sm leading-6 text-grey-600">
+                Only confirmed records count towards the computation.
+              </p>
+            </div>
+            <Link
+              className={buttonClass("soft")}
+              href={`/records?quarter=${selectedQuarter}`}
+            >
+              <Camera aria-hidden size={18} />
+              Manage records
+            </Link>
+          </div>
           <div className="space-y-3">
             {selectedRecords.map((record) => (
               <article
-                className="grid gap-4 rounded-lg border border-grey-300 bg-grey-50 p-3 lg:grid-cols-[104px_1fr_260px] lg:items-start"
+                className="flex flex-col gap-4 rounded-lg border border-grey-300 bg-grey-50 p-3 sm:flex-row sm:items-start"
                 key={record.id}
               >
-                <div className="overflow-hidden rounded-lg border border-grey-300 bg-white">
+                <div className="w-full overflow-hidden rounded-lg border border-grey-300 bg-white sm:w-[104px] sm:shrink-0">
                   {record.signed_url && record.content_type?.startsWith("image/") ? (
                     <div
                       aria-label={record.original_filename}
@@ -423,52 +423,26 @@ export default async function FilingPage({
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={record.extraction_status} />
-                    {record.extraction_confidence ? (
-                      <span className="text-xs font-bold text-grey-500">
-                        {Math.round(record.extraction_confidence * 100)}% confidence
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <StatusBadge status={record.extraction_status} />
                   <h3 className="mt-2 break-all font-extrabold text-grey-900">
                     {record.original_filename}
                   </h3>
                   <p className="mt-1 text-sm text-grey-600">
                     Uploaded {formatUploadDate(record.created_at)}
                   </p>
-                  {record.extraction_status === "confirmed" ? (
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <IncomeRecordTotalForm
-                        id={record.id}
-                        quarter={selectedQuarter}
-                        storagePath={record.storage_path}
-                        totalIncome={record.total_income}
-                      />
-                      <DeleteIncomeRecordForm
-                        filename={record.original_filename}
-                        id={record.id}
-                        quarter={selectedQuarter}
-                        storagePath={record.storage_path}
-                      />
-                    </div>
-                  ) : null}
                 </div>
-                {record.extraction_status === "confirmed" ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-success-500/10 p-3 text-sm font-bold text-grey-800">
-                    <CheckCircle2 aria-hidden className="text-success-500" size={19} />
-                    Verified evidence
-                  </div>
-                ) : (
-                  <ConfirmIncomeRecordForm quarter={selectedQuarter} record={record} />
-                )}
+                <p className="shrink-0 text-sm font-extrabold tabular-nums text-grey-900">
+                  {record.total_income === null
+                    ? "No total read"
+                    : peso(record.total_income)}
+                </p>
               </article>
             ))}
             {selectedRecords.length === 0 ? (
               <Link
                 className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-center transition hover:border-primary-500 hover:bg-primary-50"
-                href="/capture"
+                href={`/records?quarter=${selectedQuarter}`}
               >
                 <span className="text-sm font-bold text-grey-800">
                   No income records yet

@@ -102,26 +102,34 @@ export function DashboardSkeleton() {
   );
 }
 
-export function CaptureSkeleton() {
+export function RecordsSkeleton() {
   return (
-    <SkeletonRegion className="space-y-4" label="Loading capture">
-      <div>
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="mt-2 h-8 w-full max-w-xs" />
-        <Skeleton className="mt-2 h-4 w-full max-w-lg" />
+    <SkeletonRegion className="space-y-4" label="Loading income records">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="mt-2 h-8 w-52" />
+          <Skeleton className="mt-2 h-4 w-64" />
+        </div>
+        <Skeleton className="h-11 w-full md:w-48" />
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {Array.from({ length: 2 }, (_, index) => (
-          <Skeleton className="h-32 w-full rounded-xl" key={index} />
+      <div className="flex gap-2">
+        {Array.from({ length: 4 }, (_, index) => (
+          <Skeleton className="h-11 w-14" key={index} />
         ))}
       </div>
       <Skeleton className="h-5 w-56" />
-      {Array.from({ length: 2 }, (_, index) => (
+      {Array.from({ length: 3 }, (_, index) => (
         <div className={panelClass} key={index}>
-          <Skeleton className="h-6 w-24 rounded-full" />
-          <Skeleton className="mt-3 h-5 w-2/5" />
-          <Skeleton className="mt-2 h-4 w-3/5" />
-          <Skeleton className="mt-4 h-11 w-full" />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <Skeleton className="aspect-[4/3] w-full sm:w-[104px] sm:shrink-0" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-6 w-24 rounded-full" />
+              <Skeleton className="mt-3 h-5 w-2/5" />
+              <Skeleton className="mt-2 h-4 w-3/5" />
+            </div>
+            <Skeleton className="h-20 w-full sm:w-[260px] sm:shrink-0" />
+          </div>
         </div>
       ))}
     </SkeletonRegion>

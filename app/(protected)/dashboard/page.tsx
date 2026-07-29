@@ -37,7 +37,7 @@ export default async function DashboardPage() {
   const otherDeadlines = data.deadlines.filter(
     (deadline) => deadline.due_date !== plan.period.dueDate,
   );
-  const recordsHref = `/filing?quarter=${plan.period.quarter}&view=records`;
+  const recordsHref = `/records?quarter=${plan.period.quarter}`;
 
   return (
     <div className="space-y-4">

@@ -7,11 +7,13 @@ import {
   Camera,
   ClipboardCheck,
   FileCheck2,
+  FolderCheck,
   LayoutDashboard,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { ChatbotIcon } from "@/components/chatbot-icon";
+import { openCapture } from "@/components/capture-shell";
 import { cn } from "@/lib/utils";
 
 type NavigationItem = {
@@ -29,11 +31,11 @@ const dashboard: NavigationItem = {
   desktopLabel: "Dashboard",
   icon: LayoutDashboard,
 };
-const capture: NavigationItem = {
-  href: "/capture",
-  label: "Capture",
-  desktopLabel: "Add income record",
-  icon: Camera,
+const records: NavigationItem = {
+  href: "/records",
+  label: "Records",
+  desktopLabel: "Income records",
+  icon: ClipboardCheck,
 };
 const filing: NavigationItem = {
   href: "/filing",
@@ -45,7 +47,7 @@ const documents: NavigationItem = {
   href: "/documents",
   label: "Docs",
   desktopLabel: "Documents",
-  icon: ClipboardCheck,
+  icon: FolderCheck,
 };
 const deadlines: NavigationItem = {
   href: "/deadlines",
@@ -62,7 +64,7 @@ const agentic: NavigationItem = {
 
 const desktopNavItems: NavigationItem[] = [
   dashboard,
-  capture,
+  records,
   filing,
   documents,
   deadlines,
@@ -70,17 +72,19 @@ const desktopNavItems: NavigationItem[] = [
 ];
 
 /**
- * The centre slot is a verb, not a destination: capturing an income record is
- * step one of the filing pipeline (agenticSteps[0]) and nothing downstream can
- * compute, file, or pay without it. Deadlines is absent because the dashboard
- * hero already leads with the quarter's due date.
+ * The centre slot is a verb, not a destination: capture opens a modal so an
+ * invoice can be recorded from wherever the user already is, several in a row.
+ *
+ * Deadlines is absent because the dashboard hero leads with the due date, and
+ * agentic filing lives in the account menu — both are lower frequency than
+ * adding and verifying records.
  */
 const mobileNavItems = [
   dashboard,
-  filing,
+  records,
   "capture" as const,
+  filing,
   documents,
-  agentic,
 ];
 
 function NavigationIcon({
@@ -117,6 +121,19 @@ export function DesktopNav() {
 
   return (
     <nav className="mt-8 flex min-h-0 flex-1 flex-col">
+      {/* Capture is a modal everywhere, so the sidebar triggers it rather than
+          navigating. The mobile FAB does the same. */}
+      <button
+        className="mb-3 flex min-h-11 w-full items-center gap-3 rounded-lg bg-primary-500 px-3 text-sm font-bold text-white transition hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+        onClick={openCapture}
+        type="button"
+      >
+        <span className="grid h-6 w-[18px] shrink-0 place-items-center">
+          <Camera aria-hidden size={18} />
+        </span>
+        <span>Add income record</span>
+      </button>
+
       <div className="space-y-1">
         {desktopNavItems.map((item) => {
           const active = isActive(pathname, item.href);
@@ -163,25 +180,19 @@ export function MobileNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
       {mobileNavItems.map((item) => {
         if (item === "capture") {
-          const active = isActive(pathname, capture.href);
-
           return (
             <div className="relative flex min-h-11 items-end justify-center" key="capture">
-              <Link
-                aria-label="Capture an income record"
+              <button
+                aria-label="Add an income record"
                 className="group relative -top-5 flex flex-col items-center rounded-lg text-[10px] font-bold text-grey-800 transition focus-visible:outline-2 focus-visible:outline-offset-2"
-                href={capture.href}
+                onClick={openCapture}
+                type="button"
               >
-                <span
-                  className={cn(
-                    "grid size-14 place-items-center rounded-full text-white shadow-[0_8px_20px_rgba(7,92,247,0.3)] ring-4 ring-grey-50 transition active:scale-95 motion-reduce:transform-none",
-                    active ? "bg-primary-700" : "bg-primary-500",
-                  )}
-                >
+                <span className="grid size-14 place-items-center rounded-full bg-primary-500 text-white shadow-[0_8px_20px_rgba(7,92,247,0.3)] ring-4 ring-grey-50 transition active:scale-95 motion-reduce:transform-none group-hover:bg-primary-700">
                   <Camera aria-hidden size={26} strokeWidth={2} />
                 </span>
                 <span className="mt-1">Capture</span>
-              </Link>
+              </button>
             </div>
           );
         }

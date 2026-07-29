@@ -4,7 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { DesktopNav, MobileNav } from "@/components/app-nav";
 import { BrandLogo } from "@/components/brand-logo";
 import { AssistantShell } from "@/components/assistant-shell";
+import { CaptureShell } from "@/components/capture-shell";
 import { ProfileMenu } from "@/components/profile-menu";
+import { getLatestOpenQuarter } from "@/lib/filing-periods";
 
 function getGreetingName({
   profileName,
@@ -79,6 +81,9 @@ export default async function ProtectedLayout({
         </main>
       </div>
       <MobileNav />
+      {/* getLatestOpenQuarter is pure date logic, so the modal is available on
+          every page without any page paying for a plan fetch. */}
+      <CaptureShell quarter={getLatestOpenQuarter()} />
       <AssistantShell />
     </div>
   );
