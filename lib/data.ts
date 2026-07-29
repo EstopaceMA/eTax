@@ -12,6 +12,7 @@ import {
   getQuarterlyFilingSeeds,
 } from "@/lib/filing-periods";
 import { getTaxpayerCategoryDefaults } from "@/lib/taxpayer-categories";
+import { decryptEgovSsoRow } from "@/lib/egov-sso/pii-fields";
 import type {
   Deadline,
   DocumentChecklistItem,
@@ -191,7 +192,8 @@ function toSsoProfile(row: unknown): SsoProfile | null {
     return null;
   }
 
-  const r = row as Record<string, string | null>;
+  // The row comes back from Postgres encrypted; decrypt before reading any field.
+  const r = decryptEgovSsoRow(row as Record<string, string | null>);
   const fullName = [r.first_name, r.middle_name, r.last_name]
     .filter(Boolean)
     .join(" ");

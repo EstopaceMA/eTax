@@ -45,9 +45,10 @@ export async function signIn(formData: FormData) {
 
     await createSsoSession(profile.email as string);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "eGov SSO sign-in failed.";
-    redirect(`/sign-in?error=${encodeURIComponent(message)}`);
+    // Full detail (which email, which table, whether an account exists) stays
+    // server-side only — the sign-in page must not leak why it failed.
+    console.error("eGov SSO sign-in failed:", error);
+    redirect(`/sign-in?error=${encodeURIComponent("Sign in failed.")}`);
   }
 
   revalidatePath("/", "layout");

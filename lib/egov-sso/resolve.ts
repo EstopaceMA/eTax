@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { exchangeCodeForToken, fetchSsoProfile } from "@/lib/egov-sso/client";
 import { saveSsoProfile } from "@/lib/egov-sso/store";
+import { decryptEgovSsoRow } from "@/lib/egov-sso/pii-fields";
 
 export type SsoResolutionSource = "sso" | "stored";
 
@@ -38,7 +39,7 @@ async function getStoredProfile(email: string) {
     .eq("email", email)
     .maybeSingle();
 
-  return data;
+  return data ? decryptEgovSsoRow(data) : null;
 }
 
 /**
