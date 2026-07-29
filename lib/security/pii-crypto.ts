@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:crypto";
 
 /**
  * Application-level encryption for PII stored in Postgres.
@@ -79,6 +79,25 @@ export function decryptPii(value: string | null | undefined): string | null {
   ]);
 
   return plaintext.toString("utf8");
+}
+
+/**
+ * Deterministic HMAC-SHA256 of a value, hex-encoded — for looking up an
+ * encrypted column by equality (AES-GCM's random IV means the same plaintext
+ * never produces the same ciphertext twice, so the ciphertext itself can't be
+ * queried against).
+ *
+ * Uses a sub-key derived from PII_ENCRYPTION_KEY (HMAC with a fixed context
+ * string) rather than a second secret to manage. Because HMAC is one-way,
+ * knowing this hash never helps decrypt the corresponding ciphertext, and
+ * knowing PII_ENCRYPTION_KEY is required to reproduce it — the hash reveals
+ * nothing on its own beyond "was this exact value looked up before."
+ */
+export function hashForLookup(value: string): string {
+  const key = loadKey();
+  const subKey = createHmac("sha256", key).update("lookup-hash-v1").digest();
+
+  return createHmac("sha256", subKey).update(value, "utf8").digest("hex");
 }
 
 /** Encrypts a JSON-serializable value (for jsonb columns migrated to text). */

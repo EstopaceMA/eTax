@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { EgovSsoProfile } from "@/lib/egov-sso/client";
-import { decryptEgovSsoRow, encryptEgovSsoRow } from "@/lib/egov-sso/pii-fields";
+import { decryptEgovSsoRow, encryptEgovSsoRow, hashEmail } from "@/lib/egov-sso/pii-fields";
 import { decryptPii } from "@/lib/security/pii-crypto";
 
 export async function saveSsoProfile(profile: EgovSsoProfile) {
@@ -23,6 +23,10 @@ export async function saveSsoProfile(profile: EgovSsoProfile) {
   const plaintextRow = {
     sso_uid: profile.uniqid,
     email: profile.email,
+    // Plaintext, deliberately: email above becomes ciphertext once encrypted
+    // below, so equality lookups (sign-in resolves by email) go through this
+    // deterministic hash instead of the ciphertext itself.
+    email_hash: hashEmail(profile.email),
     first_name: profile.first_name,
     middle_name: profile.middle_name,
     last_name: profile.last_name,
