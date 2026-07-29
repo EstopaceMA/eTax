@@ -10,3 +10,4 @@ dist/
 coverage/
 tsconfig.tsbuildinfo
 .DS_Store
+._*

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run clean:appledouble",
     "dev": "next dev",
+    "clean:appledouble": "dot_clean -m .next .git 2>/dev/null || true",
     "dev:clean": "rm -rf .next && next dev",
     "dev:webpack": "next dev --webpack",
     "build": "next build",
