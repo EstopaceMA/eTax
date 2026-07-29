@@ -9,17 +9,23 @@
  * Usage:
  *   npx tsx scripts/encrypt-value.ts "+639171234567"
  *   npx tsx scripts/encrypt-value.ts --json '{"passport_number":"PN1234567"}'
+ *   npx tsx scripts/encrypt-value.ts --email "someone@example.com"
  *
- * TEXT_FIELDS (encrypt as plain text): first_name, middle_name, last_name,
- * suffix, gender, birth_date, nationality, mobile, photo_url, address,
- * street, barangay, municipality, province, region, country, postal,
- * foreign_address, address_line_2, tin_id, signature, signature_url
+ * TEXT_FIELDS (encrypt as plain text): email, first_name, middle_name,
+ * last_name, suffix, gender, birth_date, nationality, mobile, photo_url,
+ * address, street, barangay, municipality, province, region, country,
+ * postal, foreign_address, address_line_2, tin_id, signature, signature_url
  *
  * JSON_FIELDS (use --json; column type is text, holding serialized JSON):
  * passport, national_id, additional_information, raw_payload
  *
- * Never encrypt: id, sso_uid, email, user_id, created_at, updated_at, or any
- * *_code / country_id column — those stay plaintext for lookups.
+ * email is a special case: sign-in looks it up by email_hash (a separate
+ * deterministic hash), not by decrypting every row, so setting email by hand
+ * needs both values written together. Use --email for that — it prints both
+ * lines, ready to paste into their respective columns.
+ *
+ * Never encrypt: id, sso_uid, email_hash, user_id, created_at, updated_at, or
+ * any *_code / country_id column — those stay plaintext for lookups.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -47,20 +53,28 @@ async function main() {
   loadEnvLocal();
 
   const { encryptPii, encryptPiiJson } = await import("../lib/security/pii-crypto");
+  const { hashEmail } = await import("../lib/egov-sso/pii-fields");
 
   const args = process.argv.slice(2);
-  const isJson = args[0] === "--json";
-  const raw = isJson ? args.slice(1).join(" ") : args.join(" ");
+  const mode = args[0] === "--json" || args[0] === "--email" ? args[0] : null;
+  const raw = mode ? args.slice(1).join(" ") : args.join(" ");
 
   if (!raw) {
     console.error(
       "usage: npx tsx scripts/encrypt-value.ts \"plaintext\"\n" +
-        "       npx tsx scripts/encrypt-value.ts --json '{\"key\":\"value\"}'",
+        "       npx tsx scripts/encrypt-value.ts --json '{\"key\":\"value\"}'\n" +
+        "       npx tsx scripts/encrypt-value.ts --email \"someone@example.com\"",
     );
     process.exit(1);
   }
 
-  const encrypted = isJson ? encryptPiiJson(JSON.parse(raw)) : encryptPii(raw);
+  if (mode === "--email") {
+    console.log(`email:      ${encryptPii(raw)}`);
+    console.log(`email_hash: ${hashEmail(raw)}`);
+    return;
+  }
+
+  const encrypted = mode === "--json" ? encryptPiiJson(JSON.parse(raw)) : encryptPii(raw);
 
   console.log(encrypted);
 }
