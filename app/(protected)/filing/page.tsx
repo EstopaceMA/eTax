@@ -17,7 +17,6 @@ import {
   ConfirmIncomeRecordForm,
   FilingAcknowledgementForm,
   JourneyProgress,
-  PaymentProofForm,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import { HelpTip } from "@/components/help-tip";
@@ -225,7 +224,6 @@ const notices: Record<string, string> = {
   "review-confirmed": "Your review is saved. The exact filing hand-off is ready for approval.",
   "handoff-approved": "The hand-off was approved. Add the official-channel acknowledgement after filing.",
   "acknowledgement-recorded": "Filing acknowledgement saved. Payment now requires separate approval.",
-  "payment-verified": "Payment proof saved. The controlled filing journey is complete.",
   "record-locked": "This record is part of a handed-off return. The change was blocked and an exception was opened.",
 };
 
@@ -266,8 +264,11 @@ export default async function FilingPage({
     [selectedMeta.period, ...(selectedMeta.periodAliases ?? [])].includes(record.period),
   );
   const pdfUrl = `/api/filing/pdf?quarter=${selectedQuarter}`;
-  const notice = params?.notice ? notices[params.notice] : null;
-  const paymentReturned = params?.payment === "proof-required";
+  const notice = params?.notice
+    ? notices[params.notice]
+    : params?.payment === "completed"
+      ? "Payment confirmed. The filing journey is complete."
+      : null;
   const activeTask = plan.task.task_type;
   const computationIsDemo = plan.rule.status === "demo";
 
@@ -750,7 +751,7 @@ export default async function FilingPage({
                 </div>
               ))}
             </dl>
-            {activeTask === "approve_payment" ? (
+            {activeTask === "approve_payment" && !plan.payment.approvalRecorded ? (
               <div className="border-t border-grey-300 pt-5">
                 <p className="mb-3 text-sm leading-6 text-grey-700">
                   I approve opening the test payment channel for the taxpayer, period, tax type,
@@ -763,17 +764,14 @@ export default async function FilingPage({
                 />
               </div>
             ) : null}
-            {paymentReturned ? (
-              <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4">
-                <AlertTriangle aria-hidden className="shrink-0 text-warning-500" size={20} />
-                <p className="text-sm leading-6 text-grey-700">
-                  The gateway returned to eTax, but that does not prove payment. Add a receipt or
-                  validated reference to finish.
+            {plan.payment.approvalRecorded && !plan.payment.completed ? (
+              <div className="border border-primary-200 bg-primary-50 p-4">
+                <p className="font-semibold text-grey-800">Waiting for payment confirmation</p>
+                <p className="mt-1 text-sm leading-6 text-grey-600">
+                  No receipt upload is needed. This filing completes automatically when eGovPay
+                  confirms the payment.
                 </p>
               </div>
-            ) : null}
-            {activeTask === "capture_payment_proof" && plan.progress < 100 ? (
-              <PaymentProofForm quarter={selectedQuarter} />
             ) : null}
             {plan.progress === 100 ? (
               <div className="flex items-start gap-3 bg-success-500/10 p-4">
@@ -781,7 +779,8 @@ export default async function FilingPage({
                 <div>
                   <p className="font-extrabold text-grey-900">Filing journey complete</p>
                   <p className="mt-1 text-sm leading-6 text-grey-700">
-                    Filing acknowledgement and payment proof are preserved in the audit trail.
+                    Filing acknowledgement and payment confirmation are recorded in the audit
+                    trail.
                   </p>
                 </div>
               </div>
@@ -800,7 +799,7 @@ export default async function FilingPage({
               {money(plan.computation?.output_snapshot.amountPayable ?? 0)}
             </p>
             <p className="mt-2 text-sm leading-6 text-grey-600">
-              Controlled test hand-off. Payment remains pending until evidence is verified.
+              Controlled test hand-off. A confirmed payment completes the filing automatically.
             </p>
           </aside>
         </div>

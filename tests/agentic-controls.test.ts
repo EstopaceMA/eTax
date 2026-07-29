@@ -16,19 +16,25 @@ test("viewing a PDF has no filing status side effect", async () => {
   assert.doesNotMatch(route, /status:\s*["']ready["']/);
 });
 
-test("gateway return records pending verification, never paid", async () => {
+test("gateway return completes the approved payment without receipt upload", async () => {
   const route = await source("app/api/egovpay/return/route.ts");
 
-  assert.match(route, /pending_verification/);
-  assert.doesNotMatch(route, /payment_status:\s*["']paid["']/);
+  assert.match(route, /state:\s*["']verified["']/);
+  assert.match(route, /payment_status:\s*["']paid["']/);
+  assert.match(route, /action:\s*["']payment\.completed["']/);
+  assert.doesNotMatch(route, /pending_verification|proof-required/);
 });
 
-test("controlled actions require acknowledgement and proof before terminal states", async () => {
+test("controlled actions keep filing and payment approvals separate", async () => {
   const actions = await source("app/actions/agentic.ts");
+  const payment = await source("app/actions/payment.ts");
+  const workflow = await source("components/agentic-workflow-message.tsx");
 
   assert.match(actions, /acknowledgement_reference:\s*reference/);
-  assert.match(actions, /payment\.proof_recorded/);
-  assert.match(actions, /payment_status:\s*"paid"/);
+  assert.match(payment, /actionType:\s*"payment_handoff"/);
+  assert.match(payment, /plan\.payment\.approvalRecorded/);
+  assert.doesNotMatch(actions, /uploadPaymentProof|payment\.proof_recorded/);
+  assert.doesNotMatch(workflow, /Receipt or payment proof|Verify with proof/);
 });
 
 test("changes to records in handed-off returns are blocked and audited", async () => {
@@ -80,6 +86,22 @@ test("agentic filing is a main workspace, not an assistant tab", async () => {
   assert.doesNotMatch(assistantShell, /AgenticChat/);
   assert.match(navigation, /href: "\/agentic"/);
   assert.doesNotMatch(agenticChat, /JourneyProgress/);
+});
+
+test("desktop navigation aligns agentic filing and anchors profile at the bottom", async () => {
+  const navigation = await source("components/app-nav.tsx");
+  const protectedLayout = await source("app/(protected)/layout.tsx");
+
+  assert.match(navigation, /w-\[18px\]/);
+  assert.match(navigation, /size=\{item\.icon === "chatbot" \? 24 : 18\}/);
+  assert.match(navigation, /className="mt-auto border-t border-grey-300 pt-4"/);
+  assert.match(navigation, /href="\/profile"/);
+  assert.match(navigation, /<UserRound aria-hidden size=\{18\}/);
+  assert.match(
+    navigation,
+    /aria-current=\{isActive\(pathname, "\/profile"\) \? "page" : undefined\}/,
+  );
+  assert.match(protectedLayout, /hidden w-\[280px\] flex-col[\s\S]*lg:flex/);
 });
 
 test("agentic filing renders an accessible unified session transcript", async () => {

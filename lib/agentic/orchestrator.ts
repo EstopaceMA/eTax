@@ -91,14 +91,6 @@ const taskMetadata: Record<
     actionLabel: "Review payment",
     expectedOutput: ["Payload-bound payment approval"],
   },
-  capture_payment_proof: {
-    ownerAgent: "Payment Agent",
-    risk: "material",
-    title: "Add payment proof",
-    reason: "Gateway navigation alone cannot verify that the liability was paid.",
-    actionLabel: "Add proof",
-    expectedOutput: ["Payment reference and proof"],
-  },
 };
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -151,7 +143,7 @@ function taskState(
     };
   }
 
-  if (facts.paymentVerified || stepIndex < activeIndex) {
+  if (facts.paymentCompleted || stepIndex < activeIndex) {
     return { state: "completed", blocker: null, confidence: 1 };
   }
 
@@ -502,12 +494,7 @@ export async function refreshAgenticPlan(
     selectedQuarter === 4
       ? filingQuarters.flatMap(({ period, periodAliases = [] }) => [period, ...periodAliases])
       : [quarter.period, ...(quarter.periodAliases ?? [])];
-  const [
-    recordsResult,
-    openExceptionResult,
-    paymentIntentResult,
-    paymentEvidenceResult,
-  ] = await Promise.all([
+  const [recordsResult, openExceptionResult, paymentIntentResult] = await Promise.all([
     supabase
       .from("income_record_uploads")
       .select("*")
@@ -528,23 +515,14 @@ export async function refreshAgenticPlan(
       .eq("filing_obligation_id", obligation.id)
       .order("created_at", { ascending: false })
       .limit(1),
-    supabase
-      .from("payment_evidence")
-      .select("id, payment_intent_id, reference, original_filename, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
   ]);
 
   if (recordsResult.error) {
     throw new Error(`Could not load agent evidence: ${recordsResult.error.message}`);
   }
 
-  if (paymentIntentResult.error || paymentEvidenceResult.error) {
-    throw new Error(
-      paymentIntentResult.error?.message ??
-        paymentEvidenceResult.error?.message ??
-        "Could not load payment evidence.",
-    );
+  if (paymentIntentResult.error) {
+    throw new Error(`Could not load payment status: ${paymentIntentResult.error.message}`);
   }
 
   const loadedRecords = (recordsResult.data as IncomeRecordUpload[] | null) ?? [];
@@ -569,12 +547,8 @@ export async function refreshAgenticPlan(
         provider_reference: string | null;
       }
     | undefined;
-  const paymentProof = (paymentEvidenceResult.data ?? []).find(
-    ({ payment_intent_id }) => payment_intent_id === paymentIntent?.id,
-  );
-  const paymentVerified =
-    paymentIntent?.state === "verified" ||
-    Boolean(paymentProof);
+  const paymentCompleted =
+    paymentIntent?.state === "verified" || obligation.payment_status === "paid";
   const facts: WorkflowFacts = {
     uploadCount: records.length,
     unconfirmedCount: records.filter(
@@ -589,7 +563,7 @@ export async function refreshAgenticPlan(
     ),
     acknowledgementCaptured: Boolean(draft?.acknowledgement_reference),
     paymentApproved: Boolean(paymentIntent),
-    paymentVerified,
+    paymentCompleted,
     hasException: (openExceptionResult.data?.length ?? 0) > 0,
   };
   const activeStep = nextAgenticStep(facts);
@@ -615,24 +589,24 @@ export async function refreshAgenticPlan(
       risk_level: metadata.risk,
       confidence: status.confidence,
       title:
-        facts.paymentVerified && step === "capture_payment_proof"
+        facts.paymentCompleted && step === "approve_payment"
           ? `${quarter.period} filing journey complete`
           : step === "review_computation"
             ? reviewTitle
-          : metadata.title,
+            : metadata.title,
       reason:
-        facts.paymentVerified && step === "capture_payment_proof"
-          ? "Filing acknowledgement and payment proof are both preserved."
+        facts.paymentCompleted && step === "approve_payment"
+          ? "Filing acknowledgement and payment confirmation are both recorded."
           : step === "review_computation"
             ? reviewReason
-          : metadata.reason,
+            : metadata.reason,
       blocker: status.blocker,
       action_label:
-        facts.paymentVerified && step === "capture_payment_proof"
+        facts.paymentCompleted && step === "approve_payment"
           ? "View filing"
           : metadata.actionLabel,
       action_href:
-        facts.paymentVerified && step === "capture_payment_proof"
+        facts.paymentCompleted && step === "approve_payment"
           ? `/filing?quarter=${selectedQuarter}&view=review`
           : `/filing?quarter=${selectedQuarter}&view=${taskView(step)}`,
       evidence:
@@ -720,11 +694,10 @@ export async function refreshAgenticPlan(
     payment: {
       intentState: paymentIntent?.state ?? null,
       approvalRecorded: Boolean(paymentIntent),
-      proofStored: paymentVerified,
+      completed: paymentCompleted,
       amount: paymentIntent ? Number(paymentIntent.amount) : null,
       currency: paymentIntent?.currency === "PHP" ? "PHP" : null,
-      reference: paymentProof?.reference ?? paymentIntent?.provider_reference ?? null,
-      proofFilename: paymentProof?.original_filename ?? null,
+      reference: paymentIntent?.provider_reference ?? null,
     },
     snapshotVersion: stableHash({
       activeStep,
@@ -732,7 +705,6 @@ export async function refreshAgenticPlan(
       draftId: draft?.id ?? null,
       obligationStatus: obligation.status,
       paymentIntentState: paymentIntent?.state ?? null,
-      paymentProofId: paymentProof?.id ?? null,
       paymentStatus: obligation.payment_status,
       period: quarter.period,
       recordIds: records.map(({ id, updated_at }) => [id, updated_at]),

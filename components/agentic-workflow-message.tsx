@@ -21,7 +21,6 @@ import {
   confirmComputationReview,
   confirmIncomeRecord,
   recordFilingAcknowledgement,
-  uploadPaymentProof,
 } from "@/app/actions/agentic";
 import { uploadIncomeRecord } from "@/app/actions/workspace";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
@@ -469,43 +468,16 @@ export function AgenticWorkflowMessage({
                 </div>
               ) : null}
 
-              {taskBlock.type === "payment_proof" ? (
-                <form
-                  className="grid gap-3"
-                  onSubmit={(submitEvent) => {
-                    submitEvent.preventDefault();
-                    onRunMutation(() =>
-                      uploadPaymentProof(chatFormData(submitEvent.currentTarget)),
-                    );
-                  }}
-                >
-                  <label className="grid gap-2 text-sm font-semibold text-grey-800">
-                    Payment reference
-                    <input
-                      className="min-h-11 rounded-lg border border-grey-300 bg-grey-50 px-3 text-sm"
-                      name="reference"
-                      required
-                    />
-                  </label>
-                  <label className="grid gap-2 text-sm font-semibold text-grey-800">
-                    Receipt or payment proof
-                    <input
-                      accept="image/*,application/pdf"
-                      className="block w-full rounded-lg border border-grey-300 bg-grey-50 px-3 py-2 text-sm"
-                      name="file"
-                      required
-                      type="file"
-                    />
-                  </label>
-                  <button
-                    className={buttonClass("primary")}
-                    disabled={isMutating}
-                    type="submit"
-                  >
-                    <Upload aria-hidden size={18} />
-                    Verify with proof
-                  </button>
-                </form>
+              {taskBlock.type === "payment_pending" ? (
+                <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+                  <p className="text-sm font-semibold text-grey-800">
+                    Waiting for payment confirmation
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-grey-600">
+                    No receipt upload is needed. This filing completes automatically
+                    when eGovPay confirms the payment.
+                  </p>
+                </div>
               ) : null}
 
               {taskBlock.type === "exception" ? (

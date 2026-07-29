@@ -1,14 +1,12 @@
 "use client";
 
 import {
-  AlertTriangle,
   Check,
   CheckCircle2,
   Circle,
   FileCheck2,
   Loader2,
   ShieldCheck,
-  Upload,
 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import {
@@ -16,7 +14,6 @@ import {
   confirmComputationReview,
   confirmIncomeRecord,
   recordFilingAcknowledgement,
-  uploadPaymentProof,
 } from "@/app/actions/agentic";
 import { buttonClass } from "@/components/ui/button";
 import type { AgentTask, AgenticPlan } from "@/lib/agentic/types";
@@ -36,10 +33,6 @@ async function approveHandoffFormAction(formData: FormData) {
 
 async function acknowledgementFormAction(formData: FormData) {
   await recordFilingAcknowledgement(formData);
-}
-
-async function paymentProofFormAction(formData: FormData) {
-  await uploadPaymentProof(formData);
 }
 
 function PendingButton({
@@ -188,41 +181,6 @@ export function FilingAcknowledgementForm({ quarter }: { quarter: number }) {
       <PendingButton pendingLabel="Saving acknowledgement...">
         <CheckCircle2 aria-hidden size={18} />
         Save acknowledgement
-      </PendingButton>
-    </form>
-  );
-}
-
-export function PaymentProofForm({ quarter }: { quarter: number }) {
-  return (
-    <form action={paymentProofFormAction} className="grid gap-3">
-      <input name="quarter" type="hidden" value={quarter} />
-      <label className="grid gap-2 text-sm font-bold text-grey-800">
-        Payment reference
-        <input
-          className="min-h-11 rounded-lg border border-grey-300 bg-white px-3 text-sm font-semibold text-grey-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-          name="reference"
-          placeholder="Transaction or receipt reference"
-          required
-        />
-      </label>
-      <label className="grid gap-2 text-sm font-bold text-grey-800">
-        Receipt or payment proof
-        <input
-          accept="image/*,application/pdf"
-          className="block w-full rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm font-semibold text-grey-800 file:mr-3 file:rounded-md file:border-0 file:bg-primary-100 file:px-3 file:py-2 file:text-sm file:font-bold file:text-primary-900"
-          name="file"
-          required
-          type="file"
-        />
-      </label>
-      <p className="flex items-start gap-2 text-xs leading-5 text-grey-600">
-        <AlertTriangle aria-hidden className="mt-0.5 shrink-0 text-warning-500" size={15} />
-        Uploading proof verifies this controlled pilot record. Gateway navigation alone does not.
-      </p>
-      <PendingButton pendingLabel="Uploading proof...">
-        <Upload aria-hidden size={18} />
-        Save payment proof
       </PendingButton>
     </form>
   );

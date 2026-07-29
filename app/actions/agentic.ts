@@ -1,11 +1,9 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createExactApproval } from "@/lib/agentic/approvals";
 import { appendAudit, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/data";
 import {
@@ -262,107 +260,4 @@ export async function recordFilingAcknowledgement(formData: FormData) {
     return { ok: true as const };
   }
   redirect(filingUrl(quarter, "payment", "acknowledgement-recorded"));
-}
-
-export async function uploadPaymentProof(formData: FormData) {
-  const user = await requireUser();
-  const quarter = parseFilingQuarter(String(formData.get("quarter")));
-  const plan = await refreshAgenticPlan(quarter);
-  const file = formData.get("file");
-  const reference = String(formData.get("reference") ?? "").trim();
-
-  if (
-    plan.task.task_type !== "capture_payment_proof" ||
-    !(file instanceof File) ||
-    file.size === 0 ||
-    !reference
-  ) {
-    if (isChatCommand(formData)) {
-      return { ok: false as const, error: "Add a payment reference and proof file." };
-    }
-    redirect(filingUrl(quarter, "payment", "invalid-payment-proof"));
-  }
-
-  const supported = file.type.startsWith("image/") || file.type === "application/pdf";
-
-  if (!supported || file.size > 10 * 1024 * 1024) {
-    if (isChatCommand(formData)) {
-      return { ok: false as const, error: "Use an image or PDF smaller than 10 MB." };
-    }
-    redirect(filingUrl(quarter, "payment", "invalid-payment-proof"));
-  }
-
-  const supabase = await createClient();
-  const { data: intent } = await supabase
-    .from("payment_intents")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("filing_obligation_id", plan.task.filing_obligation_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!intent) {
-    if (isChatCommand(formData)) {
-      return { ok: false as const, error: "Approve the payment hand-off first." };
-    }
-    redirect(filingUrl(quarter, "payment", "payment-not-approved"));
-  }
-
-  const extension = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "") || "bin";
-  const storagePath = `${user.id}/${intent.id}/${randomUUID()}.${extension}`;
-  const adminSupabase = createAdminClient();
-  const upload = await adminSupabase.storage
-    .from("payment-evidence")
-    .upload(storagePath, Buffer.from(await file.arrayBuffer()), {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (upload.error) {
-    throw new Error(`Could not upload payment proof: ${upload.error.message}`);
-  }
-
-  const { error: evidenceError } = await supabase.from("payment_evidence").insert({
-    user_id: user.id,
-    payment_intent_id: intent.id,
-    original_filename: file.name,
-    storage_path: storagePath,
-    content_type: file.type,
-    size_bytes: file.size,
-    reference,
-  });
-
-  if (evidenceError) {
-    throw new Error(`Could not save payment proof: ${evidenceError.message}`);
-  }
-
-  await Promise.all([
-    supabase
-      .from("payment_intents")
-      .update({ state: "verified", provider_reference: reference, updated_at: new Date().toISOString() })
-      .eq("id", intent.id)
-      .eq("user_id", user.id),
-    supabase
-      .from("filing_obligations")
-      .update({ status: "paid", payment_status: "paid" })
-      .eq("id", plan.task.filing_obligation_id)
-      .eq("user_id", user.id),
-  ]);
-  await appendAudit(supabase, {
-    userId: user.id,
-    actorType: "user",
-    actorId: user.id,
-    action: "payment.proof_recorded",
-    targetType: "payment_intent",
-    targetId: intent.id,
-    eventData: { filename: file.name, reference },
-  });
-  await refreshAgenticPlan(quarter);
-  revalidatePath("/dashboard");
-  revalidatePath("/filing");
-  if (isChatCommand(formData)) {
-    return { ok: true as const };
-  }
-  redirect(filingUrl(quarter, "payment", "payment-verified"));
 }
