@@ -284,7 +284,6 @@ export function FilingSkeleton() {
           </div>
           <Skeleton className="h-8 w-24 rounded-full" />
         </div>
-        <div className="calculation-progress-bar relative mt-6 h-1.5 overflow-hidden rounded-full bg-primary-100 before:absolute before:inset-y-0 before:left-0 before:w-1/2 before:rounded-full before:bg-primary-500" />
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {["Income", "Reduction", "Credits", "Payable"].map((label, index) => (
             <div

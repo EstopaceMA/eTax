@@ -121,19 +121,6 @@ export function DesktopNav() {
 
   return (
     <nav className="mt-8 flex min-h-0 flex-1 flex-col">
-      {/* Capture is a modal everywhere, so the sidebar triggers it rather than
-          navigating. The mobile FAB does the same. */}
-      <button
-        className="mb-3 flex min-h-11 w-full items-center gap-3 rounded-lg bg-primary-500 px-3 text-sm font-bold text-white transition hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
-        onClick={openCapture}
-        type="button"
-      >
-        <span className="grid h-6 w-[18px] shrink-0 place-items-center">
-          <Camera aria-hidden size={18} />
-        </span>
-        <span>Add income record</span>
-      </button>
-
       <div className="space-y-1">
         {desktopNavItems.map((item) => {
           const active = isActive(pathname, item.href);

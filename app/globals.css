@@ -145,22 +145,8 @@ select {
   }
 }
 
-@keyframes calculation-progress {
-  from {
-    transform: translateX(-100%);
-  }
-
-  to {
-    transform: translateX(220%);
-  }
-}
-
 .calculation-reveal {
   animation: calculation-reveal 420ms ease-out both;
-}
-
-.calculation-progress-bar::before {
-  animation: calculation-progress 1.45s ease-in-out infinite;
 }
 
 .money-figure {
@@ -207,7 +193,4 @@ select {
     animation: none;
   }
 
-  .calculation-progress-bar::before {
-    animation: none;
-  }
 }
