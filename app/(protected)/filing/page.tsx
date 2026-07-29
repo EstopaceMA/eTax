@@ -16,7 +16,6 @@ import {
   ApproveHandoffForm,
   ConfirmComputationForm,
   FilingAcknowledgementForm,
-  JourneyProgress,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import { HelpTip } from "@/components/help-tip";
@@ -24,6 +23,7 @@ import { PdfDownloadOptions } from "@/components/pdf-download-options";
 import { StatusBadge } from "@/components/status";
 import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { AgenticStep } from "@/lib/agentic/domain";
 import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
 import {
@@ -268,12 +268,20 @@ export default async function FilingPage({
   const activeTask = plan.task.task_type;
   const computationIsDemo = plan.rule.status === "demo";
 
+  // The view switcher carries workflow state too. It previously sat below a
+  // JourneyProgress strip listing the same four labels, so the page showed two
+  // near-identical rows — one navigable, one not.
   const views = [
-    { key: "records", label: "Records", icon: ClipboardCheck },
-    { key: "review", label: "Review", icon: FileCheck2 },
-    { key: "handoff", label: "Hand-off", icon: ShieldCheck },
-    { key: "payment", label: "Payment", icon: CreditCard },
-  ] satisfies Array<{ key: FilingView; label: string; icon: typeof ClipboardCheck }>;
+    { key: "records", label: "Records", icon: ClipboardCheck, step: "collect_records" },
+    { key: "review", label: "Review", icon: FileCheck2, step: "review_computation" },
+    { key: "handoff", label: "Hand-off", icon: ShieldCheck, step: "approve_handoff" },
+    { key: "payment", label: "Payment", icon: CreditCard, step: "approve_payment" },
+  ] satisfies Array<{
+    key: FilingView;
+    label: string;
+    icon: typeof ClipboardCheck;
+    step: AgenticStep;
+  }>;
 
   return (
     <div className="space-y-4">
@@ -287,8 +295,10 @@ export default async function FilingPage({
         </p>
       </header>
 
-      <div className="scrollbar-hidden overflow-x-auto overscroll-x-contain px-3 py-1 [scroll-padding-inline:12px] md:px-0">
-        <div className="grid min-w-[680px] grid-cols-4 gap-2">
+      {/* Two columns on a phone rather than four at min-w-[680px], which forced
+          a sideways scroll and clipped the last card mid-word. */}
+      <div className="py-1">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {obligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
             const selected = quarter === selectedQuarter;
             const open = isFilingPeriodOpen(opensOn);
@@ -336,10 +346,7 @@ export default async function FilingPage({
       </div>
 
       {plan.period.isOpen ? (
-        <>
-          <JourneyProgress tasks={plan.tasks} />
-          <AgentPlanSummary plan={plan} />
-        </>
+        <AgentPlanSummary plan={plan} />
       ) : (
         <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4 text-sm text-grey-700">
           <AlertTriangle aria-hidden className="mt-0.5 shrink-0 text-warning-500" size={18} />
@@ -360,21 +367,34 @@ export default async function FilingPage({
       >
         {views.map((item) => {
           const selected = item.key === selectedView;
+          const complete =
+            plan.tasks.find(({ task_type }) => task_type === item.step)?.state ===
+            "completed";
+          const Icon = complete ? CheckCircle2 : item.icon;
 
           return (
             <Link
               aria-current={selected ? "page" : undefined}
               className={[
-                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:flex-row sm:text-sm",
+                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:flex-row sm:gap-1.5 sm:text-sm",
                 selected
                   ? "bg-white text-primary-700 shadow-sm"
-                  : "text-grey-500 hover:text-grey-900",
+                  : complete
+                    ? "text-success-500 hover:text-grey-900"
+                    : "text-grey-600 hover:text-grey-900",
               ].join(" ")}
               href={`/filing?quarter=${selectedQuarter}&view=${item.key}`}
               key={item.key}
             >
-              <item.icon aria-hidden size={17} />
-              <span className="truncate">{item.label}</span>
+              <Icon
+                aria-hidden
+                className={complete && !selected ? "text-success-500" : undefined}
+                size={17}
+              />
+              <span className="truncate">
+                {item.label}
+                {complete ? <span className="sr-only"> (done)</span> : null}
+              </span>
             </Link>
           );
         })}

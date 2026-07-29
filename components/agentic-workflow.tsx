@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Check,
-  CheckCircle2,
-  Circle,
-  FileCheck2,
-  Loader2,
-  ShieldCheck,
-} from "lucide-react";
+import { Check, CheckCircle2, FileCheck2, Loader2, ShieldCheck } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import {
   approveFilingHandoff,
@@ -16,7 +9,7 @@ import {
   recordFilingAcknowledgement,
 } from "@/app/actions/agentic";
 import { buttonClass } from "@/components/ui/button";
-import type { AgentTask, AgenticPlan } from "@/lib/agentic/types";
+import type { AgenticPlan } from "@/lib/agentic/types";
 import type { IncomeRecordUpload } from "@/lib/types";
 
 async function confirmIncomeRecordFormAction(formData: FormData) {
@@ -51,54 +44,6 @@ function PendingButton({
       {pending ? <Loader2 aria-hidden className="animate-spin" size={18} /> : null}
       {pending ? pendingLabel : children}
     </button>
-  );
-}
-
-export function JourneyProgress({ tasks }: { tasks: AgentTask[] }) {
-  const visible = tasks.filter(({ task_type }) =>
-    [
-      "collect_records",
-      "review_computation",
-      "approve_handoff",
-      "approve_payment",
-    ].includes(task_type),
-  );
-  const shortLabel: Record<string, string> = {
-    collect_records: "Records",
-    review_computation: "Review",
-    approve_handoff: "Hand-off",
-    approve_payment: "Payment",
-  };
-
-  return (
-    <ol className="grid grid-cols-4 border-y border-grey-300 bg-white" aria-label="Filing journey">
-      {visible.map((task) => {
-        const complete = task.state === "completed";
-        const active = task.state === "ready_for_review" || task.state === "exception";
-
-        return (
-          <li
-            className={[
-              "relative flex min-w-0 flex-col items-center gap-1 px-1 py-3 text-center",
-              active ? "text-primary-700" : complete ? "text-success-500" : "text-grey-400",
-            ].join(" ")}
-            key={task.id}
-          >
-            {complete ? (
-              <CheckCircle2 aria-hidden size={18} strokeWidth={2.4} />
-            ) : active ? (
-              <Circle aria-hidden className="fill-primary-500 text-primary-500" size={18} />
-            ) : (
-              <Circle aria-hidden size={18} />
-            )}
-            <span className="truncate text-[11px] font-bold sm:text-xs">
-              {shortLabel[task.task_type]}
-            </span>
-            {active ? <span className="absolute inset-x-2 bottom-0 h-0.5 bg-primary-500" /> : null}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -192,19 +137,12 @@ export function FilingAcknowledgementForm({ quarter }: { quarter: number }) {
 
 export function AgentPlanSummary({ plan }: { plan: AgenticPlan }) {
   return (
-    <div className="border-l-4 border-primary-500 bg-primary-50 px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase text-primary-700">
-            Next action · {plan.task.owner_agent}
-          </p>
-          <h2 className="mt-1 text-lg font-extrabold text-grey-900">{plan.task.title}</h2>
-          <p className="mt-1 text-sm leading-6 text-grey-700">{plan.task.reason}</p>
-        </div>
-        <span className="shrink-0 whitespace-nowrap rounded-full bg-white px-2.5 py-1 text-xs font-bold text-primary-700">
-          {Math.round(plan.task.confidence * 100)}% confidence
-        </span>
-      </div>
+    <div className="rounded-lg border-l-4 border-primary-500 bg-primary-50 px-4 py-4">
+      {/* No owner agent or confidence score: a percentage on a tax obligation
+          hands our uncertainty to someone who cannot act on it. */}
+      <p className="text-xs font-bold uppercase text-primary-700">Next action</p>
+      <h2 className="mt-1 text-lg font-extrabold text-grey-900">{plan.task.title}</h2>
+      <p className="mt-1 text-sm leading-6 text-grey-700">{plan.task.reason}</p>
       {plan.task.blocker ? (
         <p className="mt-3 text-sm font-semibold text-error-500">{plan.task.blocker}</p>
       ) : null}

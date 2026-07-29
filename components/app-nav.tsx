@@ -210,8 +210,10 @@ export function MobileNav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg text-[10px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
+              // Soft rather than solid: a filled blue tab sitting next to the
+              // solid blue Capture button read as one large blue mass.
               active
-                ? "bg-primary-500 text-white shadow-[0_8px_18px_rgba(7,92,247,0.18)]"
+                ? "bg-primary-50 text-primary-700"
                 : "text-grey-600 hover:bg-primary-50 hover:text-primary-900",
             )}
             href={item.href}
