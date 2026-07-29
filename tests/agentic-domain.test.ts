@@ -20,7 +20,7 @@ const readyFacts: WorkflowFacts = {
   handoffApproved: true,
   acknowledgementCaptured: true,
   paymentApproved: true,
-  paymentVerified: false,
+  paymentCompleted: false,
 };
 
 test("the controlled demo computation is deterministic and traceable", () => {

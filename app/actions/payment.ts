@@ -71,8 +71,10 @@ export async function createEgovPayCheckout(formData: FormData) {
       throw new Error("The selected filing obligation was not found.");
     }
 
-    if (obligation.payment_status === "paid") {
+    if (obligation.payment_status === "paid" || plan.payment.completed) {
       destination = paymentReviewUrl(quarter, "already-paid");
+    } else if (plan.payment.approvalRecorded) {
+      destination = paymentReviewUrl(quarter, "pending");
     } else {
       const origin = await getAppOrigin();
       const callbackUrl = new URL("/api/egovpay/callback", origin);

@@ -104,11 +104,10 @@ export type AgenticPlan = {
   payment: {
     intentState: string | null;
     approvalRecorded: boolean;
-    proofStored: boolean;
+    completed: boolean;
     amount: number | null;
     currency: "PHP" | null;
     reference: string | null;
-    proofFilename: string | null;
   };
   snapshotVersion: string;
 };
@@ -131,7 +130,7 @@ export type AgenticBlock =
   | { type: "filing_approval" }
   | { type: "filing_acknowledgement" }
   | { type: "payment_approval" }
-  | { type: "payment_proof" }
+  | { type: "payment_pending" }
   | { type: "exception"; message: string };
 
 export type AgenticStage = "records" | "review" | "handoff" | "payment";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseFilingQuarter } from "@/lib/filing-periods";
+import { getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
 import { createClient } from "@/lib/supabase/server";
 
 function paymentReturnUrl(request: NextRequest, quarter: number, payment: string) {
@@ -14,6 +14,7 @@ function paymentReturnUrl(request: NextRequest, quarter: number, payment: string
 
 export async function GET(request: NextRequest) {
   const quarter = parseFilingQuarter(request.nextUrl.searchParams.get("quarter"));
+  const quarterMeta = getQuarterMeta(quarter);
   const transactionId = request.nextUrl.searchParams.get("txnid")?.trim() ?? "";
 
   if (!/^ETAX-[A-Z0-9-]{4,40}$/.test(transactionId)) {
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   const { data: intent } = await supabase
     .from("payment_intents")
-    .select("id, filing_obligation_id")
+    .select("id, filing_obligation_id, state")
     .eq("user_id", user.id)
     .eq("transaction_id", transactionId)
     .maybeSingle();
@@ -40,27 +41,53 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(paymentReturnUrl(request, quarter, "missing-intent"));
   }
 
-  await Promise.all([
+  const { data: obligation } = await supabase
+    .from("filing_obligations")
+    .select("id")
+    .eq("id", intent.filing_obligation_id)
+    .eq("user_id", user.id)
+    .eq("period", quarterMeta.period)
+    .maybeSingle();
+
+  if (!obligation) {
+    return NextResponse.redirect(paymentReturnUrl(request, quarter, "missing-intent"));
+  }
+
+  if (intent.state === "verified") {
+    return NextResponse.redirect(paymentReturnUrl(request, quarter, "completed"));
+  }
+
+  const now = new Date().toISOString();
+  const [intentResult, obligationResult] = await Promise.all([
     supabase
       .from("payment_intents")
-      .update({ state: "pending_verification", updated_at: new Date().toISOString() })
+      .update({
+        state: "verified",
+        provider_reference: transactionId,
+        updated_at: now,
+      })
       .eq("id", intent.id)
       .eq("user_id", user.id),
     supabase
       .from("filing_obligations")
-      .update({ payment_status: "pending_verification" })
+      .update({ status: "paid", payment_status: "paid", updated_at: now })
       .eq("id", intent.filing_obligation_id)
       .eq("user_id", user.id),
-    supabase.from("audit_events").insert({
-      user_id: user.id,
-      actor_type: "external",
-      actor_id: "eGovPay test return",
-      action: "payment.returned_unverified",
-      target_type: "payment_intent",
-      target_id: intent.id,
-      event_data: { transactionId },
-    }),
   ]);
 
-  return NextResponse.redirect(paymentReturnUrl(request, quarter, "proof-required"));
+  if (intentResult.error || obligationResult.error) {
+    return NextResponse.redirect(paymentReturnUrl(request, quarter, "update-failed"));
+  }
+
+  await supabase.from("audit_events").insert({
+    user_id: user.id,
+    actor_type: "external",
+    actor_id: "eGovPay test return",
+    action: "payment.completed",
+    target_type: "payment_intent",
+    target_id: intent.id,
+    event_data: { transactionId },
+  });
+
+  return NextResponse.redirect(paymentReturnUrl(request, quarter, "completed"));
 }

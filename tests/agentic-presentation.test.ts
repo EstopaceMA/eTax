@@ -10,7 +10,11 @@ import {
 import { agenticSteps, type AgenticStep } from "../lib/agentic/domain";
 import type { AgenticPlan, AgentTask } from "../lib/agentic/types";
 
-function planAt(activeStep: AgenticStep, complete = false): AgenticPlan {
+function planAt(
+  activeStep: AgenticStep,
+  complete = false,
+  paymentApproved = false,
+): AgenticPlan {
   const activeIndex = agenticSteps.indexOf(activeStep);
   const tasks = agenticSteps.map(
     (taskType, index) =>
@@ -122,13 +126,12 @@ function planAt(activeStep: AgenticStep, complete = false): AgenticPlan {
       },
     ],
     payment: {
-      intentState: "verified",
-      approvalRecorded: true,
-      proofStored: true,
+      intentState: complete ? "verified" : paymentApproved ? "handed_off" : null,
+      approvalRecorded: complete || paymentApproved,
+      completed: complete,
       amount: 6_000,
       currency: "PHP",
-      reference: "PAY-Q2-2026",
-      proofFilename: "payment-proof.pdf",
+      reference: complete ? "PAY-Q2-2026" : null,
     },
     snapshotVersion: `snapshot-${activeStep}-${complete}`,
   };
@@ -263,7 +266,7 @@ test("short follow-ups inherit only a whitelisted recent topic", () => {
 });
 
 test("data answers use exact selected-period facts", () => {
-  const plan = planAt("capture_payment_proof");
+  const plan = planAt("approve_payment", true);
   const records = buildAgenticDataAnswer(plan, "records");
   const computation = buildAgenticDataAnswer(plan, "computation");
   const payment = buildAgenticDataAnswer(plan, "payment");
@@ -286,8 +289,8 @@ test("data answers use exact selected-period facts", () => {
     "₱6,000.00",
   );
   assert.equal(
-    payment.facts.find(({ label }) => label === "Proof file")?.value,
-    "payment-proof.pdf",
+    payment.facts.find(({ label }) => label === "Payment confirmation")?.value,
+    "Confirmed",
   );
 });
 
@@ -334,7 +337,7 @@ test("a new filing exposes records only", () => {
 test("the authoritative timeline adds only completed and current stages", () => {
   const review = buildAgenticSnapshot(planAt("review_computation"));
   const handoff = buildAgenticSnapshot(planAt("capture_acknowledgement"));
-  const payment = buildAgenticSnapshot(planAt("capture_payment_proof"));
+  const payment = buildAgenticSnapshot(planAt("approve_payment"));
 
   assert.deepEqual(
     review.timeline.map(({ stage, state }) => [stage, state]),
@@ -362,8 +365,16 @@ test("the authoritative timeline adds only completed and current stages", () => 
   );
 });
 
+test("an approved payment waits for gateway confirmation without requesting a receipt", () => {
+  const snapshot = buildAgenticSnapshot(planAt("approve_payment", false, true));
+  const payment = snapshot.timeline.find(({ stage }) => stage === "payment");
+
+  assert.equal(payment?.state, "active");
+  assert.equal(payment?.block?.type, "payment_pending");
+});
+
 test("a completed journey reconstructs four read-only summaries", () => {
-  const snapshot = buildAgenticSnapshot(planAt("capture_payment_proof", true));
+  const snapshot = buildAgenticSnapshot(planAt("approve_payment", true));
 
   assert.deepEqual(
     snapshot.timeline.map(({ stage, state, block }) => [stage, state, block]),

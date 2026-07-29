@@ -11,7 +11,6 @@ export const agenticSteps = [
   "approve_handoff",
   "capture_acknowledgement",
   "approve_payment",
-  "capture_payment_proof",
 ] as const;
 
 export type AgenticStep = (typeof agenticSteps)[number];
@@ -34,7 +33,7 @@ export type WorkflowFacts = {
   handoffApproved: boolean;
   acknowledgementCaptured: boolean;
   paymentApproved: boolean;
-  paymentVerified: boolean;
+  paymentCompleted: boolean;
   hasException?: boolean;
 };
 
@@ -114,7 +113,7 @@ export function nextAgenticStep(facts: WorkflowFacts): AgenticStep {
     return "approve_payment";
   }
 
-  return "capture_payment_proof";
+  return "approve_payment";
 }
 
 export function approvalPayloadHash(input: {

@@ -16,7 +16,6 @@ const stepBlocks: Record<AgenticPlan["task"]["task_type"], AgenticBlock> = {
   approve_handoff: { type: "filing_approval" },
   capture_acknowledgement: { type: "filing_acknowledgement" },
   approve_payment: { type: "payment_approval" },
-  capture_payment_proof: { type: "payment_proof" },
 };
 
 const stages: Array<{
@@ -56,11 +55,11 @@ const stages: Array<{
   {
     id: "payment",
     title: "Payment",
-    steps: ["approve_payment", "capture_payment_proof"],
+    steps: ["approve_payment"],
     activeNarration:
-      "Filing is acknowledged. Payment needs its own approval and proof before this journey is complete.",
+      "Filing is acknowledged. Payment needs its own separate approval before this journey is complete.",
     completedNarration:
-      "Payment proof is verified. This filing journey is complete.",
+      "Payment is complete. This filing journey is finished.",
   },
 ];
 
@@ -122,7 +121,10 @@ function stageSummary(stage: AgenticStage, plan: AgenticPlan) {
 
   return [
     { label: "Payment approval", value: "Approved separately" },
-    { label: "Verification", value: "Payment proof preserved" },
+    { label: "Payment status", value: "Paid" },
+    ...(plan.payment.reference
+      ? [{ label: "Payment reference", value: plan.payment.reference }]
+      : []),
   ];
 }
 
@@ -167,7 +169,11 @@ function timelineForPlan(plan: AgenticPlan): AgenticTimelineItem[] {
             message:
               plan.task.blocker ?? "This filing needs review before it can continue.",
           }
-        : stepBlocks[plan.task.task_type];
+        : plan.task.task_type === "approve_payment" &&
+            plan.payment.approvalRecorded &&
+            !plan.payment.completed
+          ? ({ type: "payment_pending" } as const)
+          : stepBlocks[plan.task.task_type];
 
     timeline.push({
       id: stage.id,
@@ -178,7 +184,10 @@ function timelineForPlan(plan: AgenticPlan): AgenticTimelineItem[] {
           ? "exception"
           : "active",
       title: stage.title,
-      narration: stage.activeNarration,
+      narration:
+        block.type === "payment_pending"
+          ? "Your payment hand-off is open. This filing completes automatically when eGovPay confirms the payment."
+          : stage.activeNarration,
       summary: stageSummary(stage.id, plan),
       block:
         block.type === "record_confirmation"
@@ -203,7 +212,7 @@ export function buildAgenticSnapshot(plan: AgenticPlan): AgenticSnapshotResponse
   const narration = !plan.period.isOpen
     ? `${plan.period.label} is ready to preview. Actions unlock on ${plan.period.opensOn}.`
     : plan.progress === 100
-      ? `${plan.period.period} is complete. Filing acknowledgement and payment proof are preserved.`
+      ? `${plan.period.period} is complete. Filing acknowledgement and payment confirmation are recorded.`
       : `${plan.task.owner_agent} is ready to help with the next step: ${plan.task.title}.`;
 
   return {
@@ -476,10 +485,10 @@ export function buildAgenticDataAnswer(
       },
     ];
   } else if (topic === "payment") {
-    answer = plan.payment.proofStored
-      ? "Payment proof is stored and verified for this period. The recorded payment amount is shown below."
+    answer = plan.payment.completed
+      ? "Payment is complete for this period. No receipt upload is required."
       : plan.payment.approvalRecorded
-        ? "A separate payment hand-off is recorded for the amount shown below, but payment is not complete until proof is stored."
+        ? "The separate payment hand-off is open for the amount shown below. Payment completes automatically after the payment channel confirms it."
         : "No payment approval is recorded. Filing approval does not authorize payment.";
     facts = [
       { label: "Payment status", value: readableStatus(plan.obligation.payment_status) },
@@ -495,13 +504,10 @@ export function buildAgenticDataAnswer(
         value: readableStatus(plan.payment.intentState),
       },
       {
-        label: "Proof verification",
-        value: plan.payment.proofStored ? "Verified" : "Not verified",
+        label: "Payment confirmation",
+        value: plan.payment.completed ? "Confirmed" : "Waiting",
       },
       { label: "Payment reference", value: plan.payment.reference ?? "Not recorded" },
-      ...(plan.payment.proofFilename
-        ? [{ label: "Proof file", value: plan.payment.proofFilename }]
-        : []),
     ];
   } else if (topic === "blocker") {
     answer = plan.task.blocker
@@ -515,7 +521,7 @@ export function buildAgenticDataAnswer(
   } else if (topic === "next_step") {
     answer =
       plan.progress === 100
-        ? "This filing journey is complete. Its acknowledgement and payment proof remain in the filing record."
+        ? "This filing journey is complete. Its acknowledgement and payment confirmation remain in the filing record."
         : "The next permitted step comes from the authoritative filing workflow shown above.";
     facts = [
       { label: "Current task", value: plan.task.title },

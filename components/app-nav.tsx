@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   FileCheck2,
   LayoutDashboard,
+  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { ChatbotIcon } from "@/components/chatbot-icon";
@@ -58,31 +59,55 @@ function openAssistant() {
   window.dispatchEvent(new Event("etax:open-assistant"));
 }
 
+function desktopLinkClass(active: boolean) {
+  return cn(
+    "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
+    active
+      ? "bg-primary-50 text-primary-900"
+      : "text-grey-600 hover:bg-primary-50 hover:text-primary-900",
+  );
+}
+
 export function DesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mt-8 space-y-1">
-      {desktopNavItems.map((item) => {
-        const active = isActive(pathname, item.href);
+    <nav className="mt-8 flex min-h-0 flex-1 flex-col">
+      <div className="space-y-1">
+        {desktopNavItems.map((item) => {
+          const active = isActive(pathname, item.href);
 
-        return (
-          <Link
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2",
-              active
-                ? "bg-primary-50 text-primary-900"
-                : "text-grey-600 hover:bg-primary-50 hover:text-primary-900",
-            )}
-            href={item.href}
-            key={item.href}
-          >
-            <NavigationIcon icon={item.icon} size={item.icon === "chatbot" ? 24 : 18} />
-            {item.desktopLabel}
-          </Link>
-        );
-      })}
+          return (
+            <Link
+              aria-current={active ? "page" : undefined}
+              className={desktopLinkClass(active)}
+              href={item.href}
+              key={item.href}
+            >
+              <span className="grid h-6 w-[18px] shrink-0 place-items-center overflow-visible">
+                <NavigationIcon
+                  icon={item.icon}
+                  size={item.icon === "chatbot" ? 24 : 18}
+                />
+              </span>
+              <span>{item.desktopLabel}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="mt-auto border-t border-grey-300 pt-4">
+        <Link
+          aria-current={isActive(pathname, "/profile") ? "page" : undefined}
+          className={desktopLinkClass(isActive(pathname, "/profile"))}
+          href="/profile"
+        >
+          <span className="grid h-6 w-[18px] shrink-0 place-items-center">
+            <UserRound aria-hidden size={18} />
+          </span>
+          <span>Profile</span>
+        </Link>
+      </div>
     </nav>
   );
 }

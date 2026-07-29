@@ -44,7 +44,7 @@ export default async function ProtectedLayout({
 
   return (
     <div className="min-h-screen bg-grey-100">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[280px] border-r border-grey-300 bg-grey-50 px-4 py-6 lg:block">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-[280px] flex-col border-r border-grey-300 bg-grey-50 px-4 py-6 lg:flex">
         <Link
           className="block px-3 focus-visible:outline-2 focus-visible:outline-offset-2"
           href="/dashboard"
