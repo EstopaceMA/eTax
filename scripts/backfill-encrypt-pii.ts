@@ -64,8 +64,10 @@ async function main() {
       // A row with mobile still in plaintext hasn't been through
       // encryptEgovSsoRow at all yet, so every other TEXT_FIELDS/JSON_FIELDS
       // column is safe to encrypt in bulk here too.
-      const { id: _id, email: _email, ...rest } = row as Record<string, unknown>;
-      Object.assign(update, encryptEgovSsoRow(rest));
+      const fullRow = { ...row } as Record<string, unknown>;
+      delete fullRow.id;
+      delete fullRow.email;
+      Object.assign(update, encryptEgovSsoRow(fullRow));
     }
 
     const { error: updateError } = await supabase
