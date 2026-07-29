@@ -477,8 +477,8 @@ export default async function FilingPage({
       ) : null}
 
       {selectedView === "review" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-          <Card className="space-y-5">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <Card className="min-w-0 space-y-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase text-primary-700">
@@ -516,7 +516,8 @@ export default async function FilingPage({
                         className={[
                           "mt-1 break-words font-extrabold text-grey-900",
                           label === "Recorded income" || label === "Amount payable"
-                            ? "money-figure text-2xl text-primary-900"
+                            ? // Monospace digits are wide; step down on phones.
+                              "money-figure text-xl text-primary-900 sm:text-2xl"
                             : "",
                         ].join(" ")}
                       >
@@ -540,7 +541,7 @@ export default async function FilingPage({
                     </div>
                   </div>
                   <div className="ledger-scroll max-h-[360px] overflow-auto">
-                    <table className="min-w-full table-fixed border-separate border-spacing-0 text-sm">
+                    <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
                       <colgroup>
                         <col className="w-14 sm:w-24" />
                         <col />
@@ -548,13 +549,13 @@ export default async function FilingPage({
                       </colgroup>
                       <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_#dfe3e8]">
                         <tr>
-                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-left text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Line
                           </th>
-                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-left text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Description
                           </th>
-                          <th className="px-4 py-2 text-right text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-right text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Value
                           </th>
                         </tr>
@@ -579,24 +580,24 @@ export default async function FilingPage({
                             >
                               <td
                                 className={[
-                                  "border-b border-l-4 border-grey-200 px-4 py-3 align-middle",
+                                  "border-b border-l-4 border-grey-200 px-2 py-3 align-middle sm:px-4",
                                   traceAccentClass(item.label),
                                 ].join(" ")}
                               >
                                 {code ? (
                                   <span
                                     className={[
-                                      "inline-flex h-7 min-w-14 items-center justify-center rounded-md border px-2 text-xs font-black",
+                                      "inline-flex h-7 min-w-9 items-center justify-center rounded-md border px-1.5 text-xs font-black sm:min-w-14 sm:px-2",
                                       traceBadgeClass(item.label),
                                     ].join(" ")}
                                   >
                                     {code}
                                   </span>
                                 ) : (
-                                  <span aria-hidden className="block h-7 min-w-14" />
+                                  <span aria-hidden className="block h-7 min-w-9 sm:min-w-14" />
                                 )}
                               </td>
-                              <td className="border-b border-grey-200 px-4 py-3 align-middle font-semibold text-grey-700">
+                              <td className="border-b border-grey-200 px-2 py-3 align-middle font-semibold text-grey-700 sm:px-4">
                                 <span className="flex min-w-0 flex-col gap-1">
                                   <span className="inline-flex min-w-0 items-center gap-2">
                                     <span>{traceLabel(item.label)}</span>
@@ -608,7 +609,7 @@ export default async function FilingPage({
                               </td>
                               <td
                                 className={[
-                                  "border-b border-grey-200 px-4 py-3 text-right align-middle",
+                                  "border-b border-grey-200 px-2 py-3 text-right align-middle sm:px-4",
                                   moneyValue
                                     ? "money-figure text-base font-black text-grey-900"
                                     : "font-bold text-grey-800",
@@ -682,7 +683,7 @@ export default async function FilingPage({
       ) : null}
 
       {selectedView === "handoff" ? (
-        <Card className="space-y-5">
+        <Card className="min-w-0 space-y-5">
           <div>
             <p className="text-xs font-bold uppercase text-primary-700">Material action</p>
             <h2 className="mt-1 text-xl font-extrabold text-grey-900">Filing hand-off</h2>
@@ -737,8 +738,8 @@ export default async function FilingPage({
       ) : null}
 
       {selectedView === "payment" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-          <Card className="space-y-5">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <Card className="min-w-0 space-y-5">
             <div>
               <p className="text-xs font-bold uppercase text-primary-700">Separate approval</p>
               <h2 className="mt-1 text-xl font-extrabold text-grey-900">Payment review</h2>
