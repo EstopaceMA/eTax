@@ -64,27 +64,6 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function openAssistant() {
-  window.dispatchEvent(new Event("etax:open-assistant"));
-}
-
-/**
- * Mobile entry point to the general assistant. AssistantShell's floating
- * trigger is desktop-only and the centre tab now belongs to capture, so
- * without this the assistant would be unreachable on a phone.
- */
-export function AssistantHeaderButton() {
-  return (
-    <button
-      aria-label="Open eTax AI Assistant"
-      className="grid size-12 shrink-0 place-items-center rounded-full bg-grey-300 text-grey-600 transition hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:size-16"
-      onClick={openAssistant}
-      type="button"
-    >
-      <ChatbotIcon size={34} />
-    </button>
-  );
-}
 
 function desktopLinkClass(active: boolean) {
   return cn(

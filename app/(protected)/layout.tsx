@@ -1,14 +1,10 @@
 import Link from "next/link";
-import { UserRound } from "lucide-react";
 import { requireUser } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
-import {
-  AssistantHeaderButton,
-  DesktopNav,
-  MobileNav,
-} from "@/components/app-nav";
+import { DesktopNav, MobileNav } from "@/components/app-nav";
 import { BrandLogo } from "@/components/brand-logo";
 import { AssistantShell } from "@/components/assistant-shell";
+import { ProfileMenu } from "@/components/profile-menu";
 
 function getGreetingName({
   profileName,
@@ -75,14 +71,7 @@ export default async function ProtectedLayout({
                 Welcome to eGovPH
               </p>
             </div>
-            <AssistantHeaderButton />
-            <Link
-              aria-label="Open tax profile"
-              className="grid size-12 shrink-0 place-items-center rounded-full bg-grey-300 text-grey-600 transition hover:bg-primary-50 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:size-16"
-              href="/profile"
-            >
-              <UserRound aria-hidden className="size-8 sm:size-10" strokeWidth={1.8} />
-            </Link>
+            <ProfileMenu name={greetingName} />
           </div>
         </header>
         <main className="protected-main mx-auto max-w-6xl px-3 pb-24 pt-4 md:px-5 md:pb-8 md:pt-5">
