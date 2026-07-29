@@ -6,6 +6,8 @@ import { createExactApproval } from "@/lib/agentic/approvals";
 import { appendAudit, refreshAgenticPlan } from "@/lib/agentic/orchestrator";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/data";
+import { getSsoMobile } from "@/lib/egov-sso/store";
+import { sendFilingConfirmationSms } from "@/lib/filing-confirmation-sms";
 import {
   filingQuarters,
   getQuarterMeta,
@@ -225,6 +227,14 @@ export async function recordFilingAcknowledgement(formData: FormData) {
 
   const supabase = await createClient();
   const now = new Date().toISOString();
+  const { data: obligationBefore } = await supabase
+    .from("filing_obligations")
+    .select("payment_status")
+    .eq("id", plan.task.filing_obligation_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const wasAlreadyPaid = obligationBefore?.payment_status === "paid";
+
   const [draftResult, obligationResult] = await Promise.all([
     supabase
       .from("return_drafts")
@@ -238,7 +248,10 @@ export async function recordFilingAcknowledgement(formData: FormData) {
       .eq("user_id", user.id),
     supabase
       .from("filing_obligations")
-      .update({ status: "filed", payment_status: "approval_required" })
+      .update({
+        status: "filed",
+        payment_status: wasAlreadyPaid ? "paid" : "approval_required",
+      })
       .eq("id", plan.task.filing_obligation_id)
       .eq("user_id", user.id),
   ]);
@@ -260,6 +273,15 @@ export async function recordFilingAcknowledgement(formData: FormData) {
     targetId: plan.draft.id,
     eventData: { reference },
   });
+
+  // A failed SMS should never block filing acknowledgement itself.
+  try {
+    const ssoProfile = await getSsoMobile(user.id);
+    await sendFilingConfirmationSms({ isPaid: wasAlreadyPaid, quarter, ssoProfile });
+  } catch (error) {
+    console.error("Could not send filing confirmation SMS:", error);
+  }
+
   await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getQuarterMeta, parseFilingQuarter } from "@/lib/filing-periods";
 import { createClient } from "@/lib/supabase/server";
+import { getSsoMobile } from "@/lib/egov-sso/store";
+import { sendEgovPayPaymentReceiptSms } from "@/lib/egovpay/payment-receipt-sms";
 
 function paymentReturnUrl(request: NextRequest, quarter: number, payment: string) {
   const url = new URL("/filing", request.url);
@@ -43,7 +45,7 @@ export async function GET(request: NextRequest) {
 
   const { data: obligation } = await supabase
     .from("filing_obligations")
-    .select("id")
+    .select("id, status")
     .eq("id", intent.filing_obligation_id)
     .eq("user_id", user.id)
     .eq("period", quarterMeta.period)
@@ -52,6 +54,8 @@ export async function GET(request: NextRequest) {
   if (!obligation) {
     return NextResponse.redirect(paymentReturnUrl(request, quarter, "missing-intent"));
   }
+
+  const wasAlreadyFiled = obligation.status === "filed";
 
   if (intent.state === "verified") {
     return NextResponse.redirect(paymentReturnUrl(request, quarter, "completed"));
@@ -88,6 +92,19 @@ export async function GET(request: NextRequest) {
     target_id: intent.id,
     event_data: { transactionId },
   });
+
+  // A failed SMS should never block the payment from being recorded.
+  try {
+    const ssoProfile = await getSsoMobile(user.id);
+    await sendEgovPayPaymentReceiptSms({
+      quarter,
+      isFiled: wasAlreadyFiled,
+      ssoProfile,
+      transactionId,
+    });
+  } catch (error) {
+    console.error("Could not send payment receipt SMS:", error);
+  }
 
   return NextResponse.redirect(paymentReturnUrl(request, quarter, "completed"));
 }
