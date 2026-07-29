@@ -105,14 +105,18 @@ export function JourneyProgress({ tasks }: { tasks: AgentTask[] }) {
 export function ConfirmIncomeRecordForm({
   quarter,
   record,
+  returnTo,
 }: {
   quarter: number;
   record: IncomeRecordUpload;
+  /** Where to land after confirming. Defaults to the filing workspace. */
+  returnTo?: "capture";
 }) {
   return (
     <form action={confirmIncomeRecordFormAction} className="grid gap-2">
       <input name="id" type="hidden" value={record.id} />
       <input name="quarter" type="hidden" value={quarter} />
+      {returnTo ? <input name="return_to" type="hidden" value={returnTo} /> : null}
       <label className="text-xs font-bold uppercase text-grey-500" htmlFor={`confirm-${record.id}`}>
         Confirmed amount
       </label>

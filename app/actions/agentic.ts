@@ -84,8 +84,15 @@ export async function confirmIncomeRecord(formData: FormData) {
   await refreshAgenticPlan(quarter);
   revalidatePath("/dashboard");
   revalidatePath("/filing");
+  revalidatePath("/capture");
   if (isChatCommand(formData)) {
     return { ok: true as const };
+  }
+  // Confirming from /capture stays there so the remaining records can be worked
+  // through. Compared against a literal rather than used as a path, so a forged
+  // field cannot turn this into an open redirect.
+  if (String(formData.get("return_to")) === "capture") {
+    redirect("/capture");
   }
   redirect(filingUrl(quarter, "records", "record-confirmed"));
 }

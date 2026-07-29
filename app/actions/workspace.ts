@@ -251,6 +251,8 @@ export async function uploadIncomeRecord(formData: FormData) {
   await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
+  revalidatePath("/capture");
+  revalidatePath("/dashboard");
 }
 
 export async function updateIncomeRecordTotal(formData: FormData) {
@@ -335,6 +337,8 @@ export async function updateIncomeRecordTotal(formData: FormData) {
   await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
+  revalidatePath("/capture");
+  revalidatePath("/dashboard");
 }
 
 export async function deleteIncomeRecord(formData: FormData) {
@@ -399,5 +403,6 @@ export async function deleteIncomeRecord(formData: FormData) {
   await refreshAgenticPlan(quarter);
   revalidatePath(`/filing?quarter=${quarter}&view=records`);
   revalidatePath("/filing");
+  revalidatePath("/capture");
   revalidatePath("/dashboard");
 }

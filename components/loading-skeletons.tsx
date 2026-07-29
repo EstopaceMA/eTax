@@ -102,6 +102,32 @@ export function DashboardSkeleton() {
   );
 }
 
+export function CaptureSkeleton() {
+  return (
+    <SkeletonRegion className="space-y-4" label="Loading capture">
+      <div>
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-2 h-8 w-full max-w-xs" />
+        <Skeleton className="mt-2 h-4 w-full max-w-lg" />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 2 }, (_, index) => (
+          <Skeleton className="h-32 w-full rounded-xl" key={index} />
+        ))}
+      </div>
+      <Skeleton className="h-5 w-56" />
+      {Array.from({ length: 2 }, (_, index) => (
+        <div className={panelClass} key={index}>
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="mt-3 h-5 w-2/5" />
+          <Skeleton className="mt-2 h-4 w-3/5" />
+          <Skeleton className="mt-4 h-11 w-full" />
+        </div>
+      ))}
+    </SkeletonRegion>
+  );
+}
+
 function ListCardSkeleton({ withAction = false }: { withAction?: boolean }) {
   return (
     <div className={panelClass}>

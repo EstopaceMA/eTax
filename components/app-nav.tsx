@@ -43,8 +43,7 @@ const mobileNavItems = [
   desktopNavItems[4], // Agent
 ];
 
-/** The records view resolves its own quarter when the param is omitted. */
-const captureHref = "/filing?view=records";
+const captureHref = "/capture";
 
 function NavigationIcon({
   icon,
@@ -147,7 +146,7 @@ export function MobileNav() {
     <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[64px] grid-cols-5 gap-1 border-t border-grey-300 bg-grey-50/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1 shadow-[0_-12px_32px_rgba(20,26,33,0.12)] backdrop-blur lg:hidden">
       {mobileNavItems.map((item) => {
         if (item === "capture") {
-          const active = isActive(pathname, "/filing");
+          const active = isActive(pathname, captureHref);
 
           return (
             <div className="relative flex min-h-11 items-end justify-center" key="capture">
