@@ -95,6 +95,20 @@ test("filing acknowledgement and payment approval remain separate steps", () => 
   );
 });
 
+test("a completed payment ends the journey even with unconfirmed records", () => {
+  // taskState() marks every step completed once payment lands, so the step
+  // resolver has to agree or the plan reports 100% progress alongside an
+  // outstanding action.
+  assert.equal(
+    nextAgenticStep({
+      ...readyFacts,
+      paymentCompleted: true,
+      unconfirmedCount: 3,
+    }),
+    "approve_payment",
+  );
+});
+
 test("approval hashes bind action, target, user, and exact payload", () => {
   const common = {
     userId: "user-1",
