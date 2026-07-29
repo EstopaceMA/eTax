@@ -124,7 +124,11 @@ test("agentic conversation follows the timeline and uses a fixed bottom composer
 
   assert.ok(transcriptIndex > -1);
   assert.ok(composerIndex > transcriptIndex);
-  assert.match(agenticChat.slice(composerIndex), /className="shrink-0 px-3 pb-3 sm:px-6"/);
+  // Bottom padding clears the lifted Capture tab on small screens.
+  assert.match(
+    agenticChat.slice(composerIndex),
+    /className="shrink-0 px-3 pb-6 sm:px-6 sm:pb-3"/,
+  );
   assert.match(agenticChat, /\.slice\(-6\)/);
   assert.match(agenticChat, /content\.slice\(0, 500\)/);
 });

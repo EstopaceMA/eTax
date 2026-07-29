@@ -1413,7 +1413,9 @@ export function AgenticChat({
           </div>
 
           <form
-            className="shrink-0 px-3 pb-3 sm:px-6"
+            // Extra bottom room on small screens so the lifted Capture tab
+            // never lands on the composer.
+            className="shrink-0 px-3 pb-6 sm:px-6 sm:pb-3"
             onSubmit={handlePromptSubmit}
           >
             <div className="mx-auto w-full max-w-3xl">

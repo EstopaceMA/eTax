@@ -89,6 +89,14 @@ export function nextAgenticStep(facts: WorkflowFacts): AgenticStep {
     return "collect_records";
   }
 
+  // A completed payment ends the quarter's journey. taskState() already marks
+  // every step completed once payment lands, so without this a record uploaded
+  // afterwards would leave the plan reporting 100% progress and an outstanding
+  // action at the same time.
+  if (facts.paymentCompleted) {
+    return "approve_payment";
+  }
+
   if (facts.uploadCount === 0) {
     return "collect_records";
   }

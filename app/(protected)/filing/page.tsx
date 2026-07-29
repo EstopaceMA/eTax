@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CalendarDays,
+  Camera,
   CheckCircle2,
   ClipboardCheck,
   CreditCard,
@@ -14,20 +15,15 @@ import {
   AgentPlanSummary,
   ApproveHandoffForm,
   ConfirmComputationForm,
-  ConfirmIncomeRecordForm,
   FilingAcknowledgementForm,
-  JourneyProgress,
 } from "@/components/agentic-workflow";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import { HelpTip } from "@/components/help-tip";
 import { PdfDownloadOptions } from "@/components/pdf-download-options";
-import {
-  DeleteIncomeRecordForm,
-  IncomeRecordTotalForm,
-  IncomeRecordUploadForm,
-} from "@/components/income-record-forms";
 import { StatusBadge } from "@/components/status";
+import { buttonClass } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { AgenticStep } from "@/lib/agentic/domain";
 import { getAgenticPlan } from "@/lib/agentic/orchestrator";
 import { getWorkspaceData } from "@/lib/data";
 import {
@@ -36,7 +32,7 @@ import {
   isFilingPeriodOpen,
   parseFilingQuarter,
 } from "@/lib/filing-periods";
-import { formatDate } from "@/lib/utils";
+import { formatDate, peso } from "@/lib/utils";
 
 type FilingView = "records" | "review" | "handoff" | "payment";
 
@@ -272,12 +268,20 @@ export default async function FilingPage({
   const activeTask = plan.task.task_type;
   const computationIsDemo = plan.rule.status === "demo";
 
+  // The view switcher carries workflow state too. It previously sat below a
+  // JourneyProgress strip listing the same four labels, so the page showed two
+  // near-identical rows — one navigable, one not.
   const views = [
-    { key: "records", label: "Records", icon: ClipboardCheck },
-    { key: "review", label: "Review", icon: FileCheck2 },
-    { key: "handoff", label: "Hand-off", icon: ShieldCheck },
-    { key: "payment", label: "Payment", icon: CreditCard },
-  ] satisfies Array<{ key: FilingView; label: string; icon: typeof ClipboardCheck }>;
+    { key: "records", label: "Records", icon: ClipboardCheck, step: "collect_records" },
+    { key: "review", label: "Review", icon: FileCheck2, step: "review_computation" },
+    { key: "handoff", label: "Hand-off", icon: ShieldCheck, step: "approve_handoff" },
+    { key: "payment", label: "Payment", icon: CreditCard, step: "approve_payment" },
+  ] satisfies Array<{
+    key: FilingView;
+    label: string;
+    icon: typeof ClipboardCheck;
+    step: AgenticStep;
+  }>;
 
   return (
     <div className="space-y-4">
@@ -291,8 +295,10 @@ export default async function FilingPage({
         </p>
       </header>
 
-      <div className="scrollbar-hidden overflow-x-auto overscroll-x-contain px-3 py-1 [scroll-padding-inline:12px] md:px-0">
-        <div className="grid min-w-[680px] grid-cols-4 gap-2">
+      {/* Two columns on a phone rather than four at min-w-[680px], which forced
+          a sideways scroll and clipped the last card mid-word. */}
+      <div className="py-1">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           {obligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
             const selected = quarter === selectedQuarter;
             const open = isFilingPeriodOpen(opensOn);
@@ -340,10 +346,7 @@ export default async function FilingPage({
       </div>
 
       {plan.period.isOpen ? (
-        <>
-          <JourneyProgress tasks={plan.tasks} />
-          <AgentPlanSummary plan={plan} />
-        </>
+        <AgentPlanSummary plan={plan} />
       ) : (
         <div className="flex items-start gap-3 border border-warning-500/30 bg-warning-500/10 p-4 text-sm text-grey-700">
           <AlertTriangle aria-hidden className="mt-0.5 shrink-0 text-warning-500" size={18} />
@@ -364,21 +367,34 @@ export default async function FilingPage({
       >
         {views.map((item) => {
           const selected = item.key === selectedView;
+          const complete =
+            plan.tasks.find(({ task_type }) => task_type === item.step)?.state ===
+            "completed";
+          const Icon = complete ? CheckCircle2 : item.icon;
 
           return (
             <Link
               aria-current={selected ? "page" : undefined}
               className={[
-                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:flex-row sm:text-sm",
+                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 text-[11px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 sm:flex-row sm:gap-1.5 sm:text-sm",
                 selected
                   ? "bg-white text-primary-700 shadow-sm"
-                  : "text-grey-500 hover:text-grey-900",
+                  : complete
+                    ? "text-success-500 hover:text-grey-900"
+                    : "text-grey-600 hover:text-grey-900",
               ].join(" ")}
               href={`/filing?quarter=${selectedQuarter}&view=${item.key}`}
               key={item.key}
             >
-              <item.icon aria-hidden size={17} />
-              <span className="truncate">{item.label}</span>
+              <Icon
+                aria-hidden
+                className={complete && !selected ? "text-success-500" : undefined}
+                size={17}
+              />
+              <span className="truncate">
+                {item.label}
+                {complete ? <span className="sr-only"> (done)</span> : null}
+              </span>
             </Link>
           );
         })}
@@ -386,24 +402,34 @@ export default async function FilingPage({
 
       {selectedView === "records" ? (
         <Card className="space-y-4">
-          <div>
-            <p className="text-xs font-bold uppercase text-primary-700">Evidence</p>
-            <h2 className="mt-1 text-xl font-extrabold text-grey-900">Income records</h2>
-            <p className="mt-1 text-sm leading-6 text-grey-600">
-              Extracted values remain provisional until you confirm them.
-            </p>
+          {/*
+            Read-only here. Records are added and verified on /records, which is
+            visited far more often than a return is filed; this view exists so
+            the evidence behind the computation is at hand while reviewing it.
+          */}
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase text-primary-700">Evidence</p>
+              <h2 className="mt-1 text-xl font-extrabold text-grey-900">Income records</h2>
+              <p className="mt-1 text-sm leading-6 text-grey-600">
+                Only confirmed records count towards the computation.
+              </p>
+            </div>
+            <Link
+              className={buttonClass("soft")}
+              href={`/records?quarter=${selectedQuarter}`}
+            >
+              <Camera aria-hidden size={18} />
+              Manage records
+            </Link>
           </div>
-          <IncomeRecordUploadForm
-            existingFilenames={selectedRecords.map(({ original_filename }) => original_filename)}
-            quarter={selectedQuarter}
-          />
           <div className="space-y-3">
             {selectedRecords.map((record) => (
               <article
-                className="grid gap-4 rounded-lg border border-grey-300 bg-grey-50 p-3 lg:grid-cols-[104px_1fr_260px] lg:items-start"
+                className="flex flex-col gap-4 rounded-lg border border-grey-300 bg-grey-50 p-3 sm:flex-row sm:items-start"
                 key={record.id}
               >
-                <div className="overflow-hidden rounded-lg border border-grey-300 bg-white">
+                <div className="w-full overflow-hidden rounded-lg border border-grey-300 bg-white sm:w-[104px] sm:shrink-0">
                   {record.signed_url && record.content_type?.startsWith("image/") ? (
                     <div
                       aria-label={record.original_filename}
@@ -417,60 +443,42 @@ export default async function FilingPage({
                     </div>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={record.extraction_status} />
-                    {record.extraction_confidence ? (
-                      <span className="text-xs font-bold text-grey-500">
-                        {Math.round(record.extraction_confidence * 100)}% confidence
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <StatusBadge status={record.extraction_status} />
                   <h3 className="mt-2 break-all font-extrabold text-grey-900">
                     {record.original_filename}
                   </h3>
                   <p className="mt-1 text-sm text-grey-600">
                     Uploaded {formatUploadDate(record.created_at)}
                   </p>
-                  {record.extraction_status === "confirmed" ? (
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <IncomeRecordTotalForm
-                        id={record.id}
-                        quarter={selectedQuarter}
-                        storagePath={record.storage_path}
-                        totalIncome={record.total_income}
-                      />
-                      <DeleteIncomeRecordForm
-                        filename={record.original_filename}
-                        id={record.id}
-                        quarter={selectedQuarter}
-                        storagePath={record.storage_path}
-                      />
-                    </div>
-                  ) : null}
                 </div>
-                {record.extraction_status === "confirmed" ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-success-500/10 p-3 text-sm font-bold text-grey-800">
-                    <CheckCircle2 aria-hidden className="text-success-500" size={19} />
-                    Verified evidence
-                  </div>
-                ) : (
-                  <ConfirmIncomeRecordForm quarter={selectedQuarter} record={record} />
-                )}
+                <p className="shrink-0 text-sm font-extrabold tabular-nums text-grey-900">
+                  {record.total_income === null
+                    ? "No total read"
+                    : peso(record.total_income)}
+                </p>
               </article>
             ))}
             {selectedRecords.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-sm font-semibold text-grey-600">
-                No income records yet. Add at least one file to start the agentic review.
-              </div>
+              <Link
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-dashed border-grey-300 bg-grey-50 p-5 text-center transition hover:border-primary-500 hover:bg-primary-50"
+                href={`/records?quarter=${selectedQuarter}`}
+              >
+                <span className="text-sm font-bold text-grey-800">
+                  No income records yet
+                </span>
+                <span className="text-xs font-semibold text-grey-600">
+                  Add at least one to start the review.
+                </span>
+              </Link>
             ) : null}
           </div>
         </Card>
       ) : null}
 
       {selectedView === "review" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-          <Card className="space-y-5">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <Card className="min-w-0 space-y-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase text-primary-700">
@@ -506,9 +514,10 @@ export default async function FilingPage({
                       </dt>
                       <dd
                         className={[
-                          "mt-1 font-extrabold text-grey-900",
+                          "mt-1 break-words font-extrabold text-grey-900",
                           label === "Recorded income" || label === "Amount payable"
-                            ? "money-figure text-2xl text-primary-900"
+                            ? // Monospace digits are wide; step down on phones.
+                              "money-figure text-xl text-primary-900 sm:text-2xl"
                             : "",
                         ].join(" ")}
                       >
@@ -532,21 +541,21 @@ export default async function FilingPage({
                     </div>
                   </div>
                   <div className="ledger-scroll max-h-[360px] overflow-auto">
-                    <table className="min-w-full table-fixed border-separate border-spacing-0 text-sm">
+                    <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
                       <colgroup>
-                        <col className="w-24" />
+                        <col className="w-14 sm:w-24" />
                         <col />
-                        <col className="w-40" />
+                        <col className="w-28 sm:w-40" />
                       </colgroup>
                       <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_#dfe3e8]">
                         <tr>
-                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-left text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Line
                           </th>
-                          <th className="px-4 py-2 text-left text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-left text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Description
                           </th>
-                          <th className="px-4 py-2 text-right text-[11px] font-bold uppercase text-grey-500">
+                          <th className="px-2 py-2 text-right text-[11px] sm:px-4 font-bold uppercase text-grey-500">
                             Value
                           </th>
                         </tr>
@@ -571,24 +580,24 @@ export default async function FilingPage({
                             >
                               <td
                                 className={[
-                                  "border-b border-l-4 border-grey-200 px-4 py-3 align-middle",
+                                  "border-b border-l-4 border-grey-200 px-2 py-3 align-middle sm:px-4",
                                   traceAccentClass(item.label),
                                 ].join(" ")}
                               >
                                 {code ? (
                                   <span
                                     className={[
-                                      "inline-flex h-7 min-w-14 items-center justify-center rounded-md border px-2 text-xs font-black",
+                                      "inline-flex h-7 min-w-9 items-center justify-center rounded-md border px-1.5 text-xs font-black sm:min-w-14 sm:px-2",
                                       traceBadgeClass(item.label),
                                     ].join(" ")}
                                   >
                                     {code}
                                   </span>
                                 ) : (
-                                  <span aria-hidden className="block h-7 min-w-14" />
+                                  <span aria-hidden className="block h-7 min-w-9 sm:min-w-14" />
                                 )}
                               </td>
-                              <td className="border-b border-grey-200 px-4 py-3 align-middle font-semibold text-grey-700">
+                              <td className="border-b border-grey-200 px-2 py-3 align-middle font-semibold text-grey-700 sm:px-4">
                                 <span className="flex min-w-0 flex-col gap-1">
                                   <span className="inline-flex min-w-0 items-center gap-2">
                                     <span>{traceLabel(item.label)}</span>
@@ -600,7 +609,7 @@ export default async function FilingPage({
                               </td>
                               <td
                                 className={[
-                                  "border-b border-grey-200 px-4 py-3 text-right align-middle",
+                                  "border-b border-grey-200 px-2 py-3 text-right align-middle sm:px-4",
                                   moneyValue
                                     ? "money-figure text-base font-black text-grey-900"
                                     : "font-bold text-grey-800",
@@ -659,7 +668,7 @@ export default async function FilingPage({
               <dl className="mt-4 space-y-3 border-t border-grey-300 pt-4 text-sm">
                 <div>
                   <dt className="text-xs font-bold uppercase text-grey-500">Version</dt>
-                  <dd className="mt-1 font-semibold text-grey-800">{plan.rule.version}</dd>
+                  <dd className="mt-1 break-all font-semibold text-grey-800">{plan.rule.version}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-bold uppercase text-grey-500">Source</dt>
@@ -674,7 +683,7 @@ export default async function FilingPage({
       ) : null}
 
       {selectedView === "handoff" ? (
-        <Card className="space-y-5">
+        <Card className="min-w-0 space-y-5">
           <div>
             <p className="text-xs font-bold uppercase text-primary-700">Material action</p>
             <h2 className="mt-1 text-xl font-extrabold text-grey-900">Filing hand-off</h2>
@@ -693,7 +702,9 @@ export default async function FilingPage({
             ].map(([label, value]) => (
               <div className="rounded-lg border border-grey-300 bg-grey-50 p-3" key={label}>
                 <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                <dd className="mt-1 break-words text-sm font-extrabold text-grey-900">
+                  {value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -713,11 +724,11 @@ export default async function FilingPage({
             </div>
           ) : null}
           {plan.draft?.acknowledgement_reference ? (
-            <div className="flex items-start gap-3 bg-success-500/10 p-4">
+            <div className="flex items-start gap-3 rounded-lg bg-success-500/10 p-4">
               <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={20} />
-              <div>
+              <div className="min-w-0">
                 <p className="font-extrabold text-grey-900">Acknowledgement saved</p>
-                <p className="mt-1 text-sm text-grey-700">
+                <p className="mt-1 break-all text-sm text-grey-700">
                   {plan.draft.acknowledgement_reference}
                 </p>
               </div>
@@ -727,8 +738,8 @@ export default async function FilingPage({
       ) : null}
 
       {selectedView === "payment" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-          <Card className="space-y-5">
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <Card className="min-w-0 space-y-5">
             <div>
               <p className="text-xs font-bold uppercase text-primary-700">Separate approval</p>
               <h2 className="mt-1 text-xl font-extrabold text-grey-900">Payment review</h2>
@@ -747,7 +758,9 @@ export default async function FilingPage({
               ].map(([label, value]) => (
                 <div className="border-b border-grey-300 pb-3" key={label}>
                   <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                  <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                  <dd className="mt-1 break-words text-sm font-extrabold text-grey-900">
+                  {value}
+                </dd>
                 </div>
               ))}
             </dl>
@@ -774,9 +787,9 @@ export default async function FilingPage({
               </div>
             ) : null}
             {plan.progress === 100 ? (
-              <div className="flex items-start gap-3 bg-success-500/10 p-4">
+              <div className="flex items-start gap-3 rounded-lg bg-success-500/10 p-4">
                 <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={22} />
-                <div>
+                <div className="min-w-0">
                   <p className="font-extrabold text-grey-900">Filing journey complete</p>
                   <p className="mt-1 text-sm leading-6 text-grey-700">
                     Filing acknowledgement and payment confirmation are recorded in the audit

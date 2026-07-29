@@ -608,7 +608,12 @@ export async function refreshAgenticPlan(
       action_href:
         facts.paymentCompleted && step === "approve_payment"
           ? `/filing?quarter=${selectedQuarter}&view=review`
-          : `/filing?quarter=${selectedQuarter}&view=${taskView(step)}`,
+          : // Records are added and confirmed on /records; the filing view of
+            // them is read-only evidence, so sending these steps there would
+            // offer no way to act on them.
+            step === "collect_records" || step === "confirm_extraction"
+            ? `/records?quarter=${selectedQuarter}`
+            : `/filing?quarter=${selectedQuarter}&view=${taskView(step)}`,
       evidence:
         step === "confirm_extraction"
           ? records.map(({ id, original_filename, extraction_status }) => ({
