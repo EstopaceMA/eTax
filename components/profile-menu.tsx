@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { FileCheck2, LogOut, UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { ChatbotIcon } from "@/components/chatbot-icon";
 
@@ -82,14 +82,16 @@ export function ProfileMenu({ name }: { name: string }) {
           </button>
 
           {/* Agentic filing sits here rather than in the tab bar: it is a
-              once-a-quarter guided flow, unlike records, which is constant. */}
+              once-a-quarter guided flow, unlike records, which is constant. It
+              shares the assistant's icon because both are AI surfaces — the
+              labels carry the distinction. */}
           <Link
             className={itemClass}
             href="/agentic"
             onClick={() => setIsOpen(false)}
             role="menuitem"
           >
-            <FileCheck2 aria-hidden size={18} strokeWidth={1.9} />
+            <ChatbotIcon size={22} />
             Agentic filing
           </Link>
 

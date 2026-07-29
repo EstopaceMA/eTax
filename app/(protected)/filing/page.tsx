@@ -514,7 +514,7 @@ export default async function FilingPage({
                       </dt>
                       <dd
                         className={[
-                          "mt-1 font-extrabold text-grey-900",
+                          "mt-1 break-words font-extrabold text-grey-900",
                           label === "Recorded income" || label === "Amount payable"
                             ? "money-figure text-2xl text-primary-900"
                             : "",
@@ -542,9 +542,9 @@ export default async function FilingPage({
                   <div className="ledger-scroll max-h-[360px] overflow-auto">
                     <table className="min-w-full table-fixed border-separate border-spacing-0 text-sm">
                       <colgroup>
-                        <col className="w-24" />
+                        <col className="w-14 sm:w-24" />
                         <col />
-                        <col className="w-40" />
+                        <col className="w-28 sm:w-40" />
                       </colgroup>
                       <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_#dfe3e8]">
                         <tr>
@@ -667,7 +667,7 @@ export default async function FilingPage({
               <dl className="mt-4 space-y-3 border-t border-grey-300 pt-4 text-sm">
                 <div>
                   <dt className="text-xs font-bold uppercase text-grey-500">Version</dt>
-                  <dd className="mt-1 font-semibold text-grey-800">{plan.rule.version}</dd>
+                  <dd className="mt-1 break-all font-semibold text-grey-800">{plan.rule.version}</dd>
                 </div>
                 <div>
                   <dt className="text-xs font-bold uppercase text-grey-500">Source</dt>
@@ -701,7 +701,9 @@ export default async function FilingPage({
             ].map(([label, value]) => (
               <div className="rounded-lg border border-grey-300 bg-grey-50 p-3" key={label}>
                 <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                <dd className="mt-1 break-words text-sm font-extrabold text-grey-900">
+                  {value}
+                </dd>
               </div>
             ))}
           </dl>
@@ -721,11 +723,11 @@ export default async function FilingPage({
             </div>
           ) : null}
           {plan.draft?.acknowledgement_reference ? (
-            <div className="flex items-start gap-3 bg-success-500/10 p-4">
+            <div className="flex items-start gap-3 rounded-lg bg-success-500/10 p-4">
               <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={20} />
-              <div>
+              <div className="min-w-0">
                 <p className="font-extrabold text-grey-900">Acknowledgement saved</p>
-                <p className="mt-1 text-sm text-grey-700">
+                <p className="mt-1 break-all text-sm text-grey-700">
                   {plan.draft.acknowledgement_reference}
                 </p>
               </div>
@@ -755,7 +757,9 @@ export default async function FilingPage({
               ].map(([label, value]) => (
                 <div className="border-b border-grey-300 pb-3" key={label}>
                   <dt className="text-xs font-bold uppercase text-grey-500">{label}</dt>
-                  <dd className="mt-1 text-sm font-extrabold text-grey-900">{value}</dd>
+                  <dd className="mt-1 break-words text-sm font-extrabold text-grey-900">
+                  {value}
+                </dd>
                 </div>
               ))}
             </dl>
@@ -782,9 +786,9 @@ export default async function FilingPage({
               </div>
             ) : null}
             {plan.progress === 100 ? (
-              <div className="flex items-start gap-3 bg-success-500/10 p-4">
+              <div className="flex items-start gap-3 rounded-lg bg-success-500/10 p-4">
                 <CheckCircle2 aria-hidden className="shrink-0 text-success-500" size={22} />
-                <div>
+                <div className="min-w-0">
                   <p className="font-extrabold text-grey-900">Filing journey complete</p>
                   <p className="mt-1 text-sm leading-6 text-grey-700">
                     Filing acknowledgement and payment confirmation are recorded in the audit

@@ -83,9 +83,11 @@ export function QuarterSummary({ plan }: { plan: AgenticPlan }) {
           </p>
         </>
       ) : (
+        // Steps down on narrow screens: a seven-figure amount at 40px is wider
+        // than a phone viewport once page and card padding are taken out.
         <p className="mt-1 flex items-baseline gap-1.5 text-grey-900">
-          <span className="text-2xl font-bold text-primary-500">₱</span>
-          <span className="text-[40px] font-black leading-none tracking-tight tabular-nums">
+          <span className="text-xl font-bold text-primary-500 sm:text-2xl">₱</span>
+          <span className="min-w-0 break-all text-[32px] font-black leading-none tracking-tight tabular-nums sm:text-[40px]">
             {pesoNumber(amountDue)}
           </span>
         </p>
