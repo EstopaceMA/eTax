@@ -1,4 +1,5 @@
 import { signIn } from "@/app/actions/auth";
+import { storedFallbackAllowed } from "@/lib/egov-sso/resolve";
 import { Card } from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
 import { SsoSignInButton } from "@/components/sso-sign-in-button";
@@ -9,6 +10,9 @@ export default async function SignInPage({
   searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const params = await searchParams;
+  // In strict mode the stored-profile fallback is off, so a code is mandatory —
+  // the field must say so rather than claiming to be optional.
+  const codeRequired = !storedFallbackAllowed();
 
   return (
     <main className="min-h-screen bg-grey-100 px-3 py-4 md:grid md:place-items-center md:px-4 md:py-8">
@@ -38,6 +42,30 @@ export default async function SignInPage({
               required
               type="email"
             />
+          </label>
+          <label className="block">
+            <span className="text-sm font-bold text-grey-700">
+              Exchange code
+              {codeRequired ? null : (
+                <span className="font-semibold text-grey-500"> (optional)</span>
+              )}
+            </span>
+            <input
+              autoComplete="off"
+              className="mt-2 min-h-11 w-full rounded-lg border border-grey-300 bg-white px-3 font-mono text-sm text-grey-900 focus:border-primary-500 focus:outline-2 focus:outline-offset-2"
+              name="exchange_code"
+              required={codeRequired}
+              spellCheck={false}
+              type="text"
+            />
+            <span className="mt-2 block text-xs leading-5 text-grey-600">
+              For testing only. eGovPH SSO requires a single-use exchange code
+              to return your profile, and this environment has no redirect
+              integration to obtain one automatically.{" "}
+              {codeRequired
+                ? "Paste a freshly generated code — a code is required for every sign-in in this environment, and each one works only once."
+                : "Paste a freshly generated code to sign in with live eGovPH data, or leave it blank to use the profile saved from a previous sign-in."}
+            </span>
           </label>
           <SsoSignInButton />
         </form>

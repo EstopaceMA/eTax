@@ -1,7 +1,67 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { exchangeCodeForToken, fetchSsoProfile } from "@/lib/egov-sso/client";
+import {
+  EgovSsoHttpError,
+  exchangeCodeForToken,
+  fetchSsoProfile,
+} from "@/lib/egov-sso/client";
 import { saveSsoProfile } from "@/lib/egov-sso/store";
 import { decryptEgovSsoRow, hashEmail } from "@/lib/egov-sso/pii-fields";
+
+/**
+ * A sign-in failure with a message safe to show the person signing in.
+ *
+ * This is a staging/testing environment where whoever is testing needs to know
+ * which step failed — a rejected code, an unreachable eGovPH, or no saved
+ * profile are very different problems with different fixes. Messages describe
+ * the mechanism rather than confirming whether an account exists, so this
+ * stays a poor account-enumeration oracle even while being specific.
+ */
+export class SsoSignInError extends Error {
+  constructor(
+    /** Safe to render in the UI. */
+    readonly userMessage: string,
+    /** Full detail for server logs only. */
+    logMessage?: string,
+  ) {
+    super(logMessage ?? userMessage);
+    this.name = "SsoSignInError";
+  }
+}
+
+/** Turns an eGov failure into something a tester can act on. */
+function describeSsoFailure(error: unknown): string {
+  if (error instanceof EgovSsoHttpError) {
+    if (error.stage === "token_exchange") {
+      if (error.status === 422) {
+        return "eGovPH rejected that exchange code. Codes are single-use and expire quickly — please generate a fresh one and try again.";
+      }
+
+      if (error.status === 403) {
+        return "eGovPH rejected this app's partner credentials. Check EGOV_SSO_PARTNER_CODE and EGOV_SSO_PARTNER_SECRET.";
+      }
+    }
+
+    if (error.stage === "profile_fetch" && error.status === 401) {
+      return "The exchange code worked, but eGovPH rejected the access token when fetching the profile.";
+    }
+
+    if (error.status >= 500) {
+      return `eGovPH SSO returned a server error (HTTP ${error.status}). This is on their side — please retry shortly.`;
+    }
+
+    return `eGovPH SSO returned HTTP ${error.status}. Please generate a fresh exchange code and try again.`;
+  }
+
+  if (error instanceof Error && /fetch failed|ENOTFOUND|ECONNREFUSED|timeout/i.test(error.message)) {
+    return "Could not reach eGovPH SSO. Check network access to hackathon-sso.e.gov.ph.";
+  }
+
+  if (error instanceof Error && /Missing required environment variable/i.test(error.message)) {
+    return `This app is misconfigured: ${error.message}`;
+  }
+
+  return "eGovPH SSO could not be reached or returned an unexpected response.";
+}
 
 export type SsoResolutionSource = "sso" | "stored";
 
@@ -20,7 +80,7 @@ export interface SsoResolution {
  * every time. Off makes a valid, unused exchange code mandatory, so an admin
  * gates every sign-in rather than the email alone being enough.
  */
-function storedFallbackAllowed() {
+export function storedFallbackAllowed() {
   const raw = process.env.EGOV_SSO_ALLOW_STORED_FALLBACK?.trim().toLowerCase();
 
   if (!raw) {
@@ -45,22 +105,34 @@ async function getStoredProfile(email: string) {
 /**
  * Resolves an eGov SSO profile for the given email.
  *
- * Dev/staging flow: an admin pastes a freshly generated exchange code into
- * public.egov_sso_exchange_codes. Codes are single-use, so when one is absent
- * or already spent the stored profile is used instead — unless
- * EGOV_SSO_ALLOW_STORED_FALLBACK is off, which makes a valid code mandatory.
+ * Two ways to supply a code: an admin pastes one into
+ * public.egov_sso_exchange_codes ahead of time, or it's typed directly on the
+ * sign-in form for that one attempt — the latter takes priority when present,
+ * since typing a code is the more deliberate, freshest signal. Codes are
+ * single-use, so when neither is present or valid, the stored profile is used
+ * instead — unless EGOV_SSO_ALLOW_STORED_FALLBACK is off, which makes a valid
+ * code mandatory.
  */
-export async function resolveSsoLogin(email: string): Promise<SsoResolution> {
+export async function resolveSsoLogin(
+  email: string,
+  explicitExchangeCode?: string,
+): Promise<SsoResolution> {
   const supabase = createAdminClient();
 
-  const { data: codeRow } = await supabase
-    .from("egov_sso_exchange_codes")
-    .select("exchange_code")
-    .eq("email", email)
-    .maybeSingle();
+  let exchangeCode = explicitExchangeCode?.trim();
 
-  const exchangeCode = codeRow?.exchange_code?.trim();
+  if (!exchangeCode) {
+    const { data: codeRow } = await supabase
+      .from("egov_sso_exchange_codes")
+      .select("exchange_code")
+      .eq("email", email)
+      .maybeSingle();
+
+    exchangeCode = codeRow?.exchange_code?.trim();
+  }
+
   let ssoError: string | undefined;
+  let ssoFailureMessage: string | undefined;
 
   if (exchangeCode) {
     try {
@@ -71,24 +143,30 @@ export async function resolveSsoLogin(email: string): Promise<SsoResolution> {
       return { profile: saved, source: "sso" };
     } catch (error) {
       ssoError = error instanceof Error ? error.message : String(error);
+      ssoFailureMessage = describeSsoFailure(error);
     }
   }
 
   if (!storedFallbackAllowed()) {
-    throw new Error(
+    throw new SsoSignInError(
+      ssoFailureMessage ??
+        "An exchange code is required to sign in. Generate one from eGovPH and paste it into the exchange code field.",
       ssoError
-        ? `That exchange code did not work. Add a fresh one for ${email} in egov_sso_exchange_codes. (${ssoError})`
-        : `A valid exchange code is required for ${email}. Add one in egov_sso_exchange_codes.`,
+        ? `Strict mode: code failed for ${email}. ${ssoError}`
+        : `Strict mode: no code supplied for ${email}.`,
     );
   }
 
   const stored = await getStoredProfile(email);
 
   if (!stored) {
-    throw new Error(
+    throw new SsoSignInError(
+      ssoFailureMessage
+        ? `${ssoFailureMessage} There is also no previously saved profile to fall back on, so a working code is required for this first sign-in.`
+        : "No exchange code was supplied and there is no previously saved profile for this email. Paste a freshly generated eGovPH exchange code to sign in for the first time.",
       ssoError
-        ? `eGov SSO failed and no stored profile exists for ${email}. ${ssoError}`
-        : `No exchange code and no stored profile for ${email}. Add a code in egov_sso_exchange_codes.`,
+        ? `No stored profile for ${email} and the code failed. ${ssoError}`
+        : `No stored profile for ${email} and no code supplied.`,
     );
   }
 
