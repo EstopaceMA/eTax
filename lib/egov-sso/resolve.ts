@@ -45,21 +45,32 @@ async function getStoredProfile(email: string) {
 /**
  * Resolves an eGov SSO profile for the given email.
  *
- * Dev/staging flow: an admin pastes a freshly generated exchange code into
- * public.egov_sso_exchange_codes. Codes are single-use, so when one is absent
- * or already spent the stored profile is used instead — unless
- * EGOV_SSO_ALLOW_STORED_FALLBACK is off, which makes a valid code mandatory.
+ * Two ways to supply a code: an admin pastes one into
+ * public.egov_sso_exchange_codes ahead of time, or it's typed directly on the
+ * sign-in form for that one attempt — the latter takes priority when present,
+ * since typing a code is the more deliberate, freshest signal. Codes are
+ * single-use, so when neither is present or valid, the stored profile is used
+ * instead — unless EGOV_SSO_ALLOW_STORED_FALLBACK is off, which makes a valid
+ * code mandatory.
  */
-export async function resolveSsoLogin(email: string): Promise<SsoResolution> {
+export async function resolveSsoLogin(
+  email: string,
+  explicitExchangeCode?: string,
+): Promise<SsoResolution> {
   const supabase = createAdminClient();
 
-  const { data: codeRow } = await supabase
-    .from("egov_sso_exchange_codes")
-    .select("exchange_code")
-    .eq("email", email)
-    .maybeSingle();
+  let exchangeCode = explicitExchangeCode?.trim();
 
-  const exchangeCode = codeRow?.exchange_code?.trim();
+  if (!exchangeCode) {
+    const { data: codeRow } = await supabase
+      .from("egov_sso_exchange_codes")
+      .select("exchange_code")
+      .eq("email", email)
+      .maybeSingle();
+
+    exchangeCode = codeRow?.exchange_code?.trim();
+  }
+
   let ssoError: string | undefined;
 
   if (exchangeCode) {

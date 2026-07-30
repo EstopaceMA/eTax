@@ -39,6 +39,26 @@ export default async function SignInPage({
               type="email"
             />
           </label>
+          <label className="block">
+            <span className="text-sm font-bold text-grey-700">
+              Exchange code{" "}
+              <span className="font-semibold text-grey-500">(optional)</span>
+            </span>
+            <input
+              autoComplete="off"
+              className="mt-2 min-h-11 w-full rounded-lg border border-grey-300 bg-white px-3 font-mono text-sm text-grey-900 focus:border-primary-500 focus:outline-2 focus:outline-offset-2"
+              name="exchange_code"
+              spellCheck={false}
+              type="text"
+            />
+            <span className="mt-2 block text-xs leading-5 text-grey-600">
+              For testing only. eGovPH SSO requires a single-use exchange code
+              to return your profile, and this environment has no redirect
+              integration to obtain one automatically. Paste a freshly generated
+              code to sign in with live eGovPH data. Leave this blank to use the
+              profile saved from a previous sign-in.
+            </span>
+          </label>
           <SsoSignInButton />
         </form>
         <p className="mt-6 text-sm text-grey-600">
