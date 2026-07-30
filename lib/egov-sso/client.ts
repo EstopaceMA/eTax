@@ -60,6 +60,23 @@ interface EgovSsoAuthResponse {
   data: EgovSsoProfile;
 }
 
+/**
+ * An eGov SSO call that came back with a non-OK status. Carries the HTTP status
+ * so callers can tell a rejected exchange code (422) from a partner
+ * credential problem (403) or an outage (5xx).
+ */
+export class EgovSsoHttpError extends Error {
+  constructor(
+    readonly status: number,
+    readonly stage: "token_exchange" | "profile_fetch",
+  ) {
+    super(
+      `eGov SSO ${stage === "token_exchange" ? "token exchange" : "profile fetch"} failed with HTTP ${status}`,
+    );
+    this.name = "EgovSsoHttpError";
+  }
+}
+
 export async function exchangeCodeForToken(
   exchangeCode: string,
 ): Promise<string> {
@@ -78,9 +95,7 @@ export async function exchangeCodeForToken(
   });
 
   if (!response.ok) {
-    throw new Error(
-      `eGov SSO token exchange failed with HTTP ${response.status}`,
-    );
+    throw new EgovSsoHttpError(response.status, "token_exchange");
   }
 
   const payload = (await response.json()) as EgovSsoTokenResponse;
@@ -102,9 +117,7 @@ export async function fetchSsoProfile(
   );
 
   if (!response.ok) {
-    throw new Error(
-      `eGov SSO profile lookup failed with HTTP ${response.status}`,
-    );
+    throw new EgovSsoHttpError(response.status, "profile_fetch");
   }
 
   const payload = (await response.json()) as EgovSsoAuthResponse;
