@@ -218,7 +218,11 @@ export async function recordFilingAcknowledgement(formData: FormData) {
 
   const plan = await refreshAgenticPlan(quarter);
 
-  if (plan.task.task_type !== "capture_acknowledgement" || !plan.draft) {
+  if (
+    plan.task.task_type !== "capture_acknowledgement" ||
+    !plan.draft ||
+    !plan.computation
+  ) {
     if (isChatCommand(formData)) {
       return { ok: false as const, error: "The acknowledgement step is not ready." };
     }
@@ -277,7 +281,12 @@ export async function recordFilingAcknowledgement(formData: FormData) {
   // A failed SMS should never block filing acknowledgement itself.
   try {
     const ssoProfile = await getSsoMobile(user.id);
-    await sendFilingConfirmationSms({ isPaid: wasAlreadyPaid, quarter, ssoProfile });
+    await sendFilingConfirmationSms({
+      amountPayable: plan.computation.output_snapshot.amountPayable,
+      isPaid: wasAlreadyPaid,
+      quarter,
+      ssoProfile,
+    });
   } catch (error) {
     console.error("Could not send filing confirmation SMS:", error);
   }

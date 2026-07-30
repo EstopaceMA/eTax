@@ -2,12 +2,12 @@ import "server-only";
 
 import type { FilingQuarter } from "@/lib/filing-periods";
 import { getQuarterMeta } from "@/lib/filing-periods";
-import { getTaxAmountPayable } from "@/lib/tax-amount-payable";
 import { normalizePhilippineMobileNumber } from "@/lib/emessage/philippines";
 import { sendSms } from "@/lib/emessage/sms";
 import type { SsoProfile } from "@/lib/types";
 
 type SendFilingConfirmationSmsInput = {
+  amountPayable: number;
   isPaid: boolean;
   quarter: FilingQuarter;
   ssoProfile: Pick<SsoProfile, "mobile"> | null;
@@ -18,6 +18,10 @@ export type FilingConfirmationSmsResult =
   | { status: "skipped"; reason: string };
 
 function formatPhpAmount(amount: number) {
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("The filing computation did not provide a valid amount payable.");
+  }
+
   return new Intl.NumberFormat("en-PH", {
     currency: "PHP",
     currencyDisplay: "code",
@@ -26,6 +30,7 @@ function formatPhpAmount(amount: number) {
 }
 
 export async function sendFilingConfirmationSms({
+  amountPayable,
   isPaid,
   quarter,
   ssoProfile,
@@ -41,7 +46,7 @@ export async function sendFilingConfirmationSms({
   const quarterMeta = getQuarterMeta(quarter);
   const nextStep = isPaid
     ? "Your payment is also marked paid. Please use the eTax app to review your filing record."
-    : `Payment of ${formatPhpAmount(getTaxAmountPayable())} is still pending. Please use the eTax app to pay with eGovPay.`;
+    : `Payment of ${formatPhpAmount(amountPayable)} is still pending. Please use the eTax app to pay with eGovPay.`;
   const message = `eTax: Your ${quarterMeta.period} BIR Form ${quarterMeta.formCode} has been filed by eTax. ${nextStep}`;
 
   await sendSms({ number: recipient, message });

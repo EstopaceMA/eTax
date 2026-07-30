@@ -2,12 +2,12 @@ import "server-only";
 
 import type { FilingQuarter } from "@/lib/filing-periods";
 import { getQuarterMeta } from "@/lib/filing-periods";
-import { getTaxAmountPayable } from "@/lib/tax-amount-payable";
 import { sendSms } from "@/lib/emessage/sms";
 import { normalizePhilippineMobileNumber } from "@/lib/emessage/philippines";
 import type { SsoProfile } from "@/lib/types";
 
 type SendPaymentReceiptSmsInput = {
+  amount: number;
   quarter: FilingQuarter;
   isFiled: boolean;
   ssoProfile: Pick<SsoProfile, "mobile"> | null;
@@ -19,6 +19,10 @@ export type PaymentReceiptSmsResult =
   | { status: "skipped"; reason: string };
 
 function formatPhpAmount(amount: number) {
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("The payment intent did not provide a valid amount.");
+  }
+
   return new Intl.NumberFormat("en-PH", {
     currency: "PHP",
     currencyDisplay: "code",
@@ -27,6 +31,7 @@ function formatPhpAmount(amount: number) {
 }
 
 export async function sendEgovPayPaymentReceiptSms({
+  amount,
   quarter,
   isFiled,
   ssoProfile,
@@ -41,7 +46,6 @@ export async function sendEgovPayPaymentReceiptSms({
   }
 
   const quarterMeta = getQuarterMeta(quarter);
-  const amount = getTaxAmountPayable();
   const nextStep = isFiled
     ? "Your return is marked filed and paid. Please use the eTax app to review your filing record."
     : "Your payment is marked paid, but filing is still pending. Please use the eTax app to file your return.";

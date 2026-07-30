@@ -635,7 +635,7 @@ export default async function FilingPage({
                   </ul>
                 </div>
                 {activeTask === "review_computation" ? (
-                  <div className="sticky bottom-3 z-20 rounded-lg border border-grey-300 bg-white/95 p-3 shadow-[0_12px_32px_rgba(20,26,33,0.16)] backdrop-blur">
+                  <div className="sticky bottom-3 z-20">
                     <ConfirmComputationForm
                       isDemo={computationIsDemo}
                       quarter={selectedQuarter}

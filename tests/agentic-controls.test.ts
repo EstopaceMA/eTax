@@ -37,6 +37,24 @@ test("controlled actions keep filing and payment approvals separate", async () =
   assert.doesNotMatch(workflow, /Receipt or payment proof|Verify with proof/);
 });
 
+test("transaction messages use authoritative filing and payment totals", async () => {
+  const actions = await source("app/actions/agentic.ts");
+  const paymentReturn = await source("app/api/egovpay/return/route.ts");
+  const filingSms = await source("lib/filing-confirmation-sms.ts");
+  const paymentSms = await source("lib/egovpay/payment-receipt-sms.ts");
+
+  assert.match(
+    actions,
+    /amountPayable:\s*plan\.computation\.output_snapshot\.amountPayable/,
+  );
+  assert.match(paymentReturn, /\.select\("id, filing_obligation_id, state, amount"\)/);
+  assert.match(paymentReturn, /amount:\s*Number\(intent\.amount\)/);
+  assert.match(filingSms, /formatPhpAmount\(amountPayable\)/);
+  assert.match(paymentSms, /formatPhpAmount\(amount\)/);
+  assert.doesNotMatch(filingSms, /getTaxAmountPayable|7440/);
+  assert.doesNotMatch(paymentSms, /getTaxAmountPayable|7440/);
+});
+
 test("changes to records in handed-off returns are blocked and audited", async () => {
   const actions = await source("app/actions/workspace.ts");
 

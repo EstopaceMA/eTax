@@ -1,16 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { Camera, CheckCircle2, FileUp, Loader2, TriangleAlert } from "lucide-react";
-import { useActionState, useRef, useState } from "react";
+import {
+  Camera,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  FileText,
+  FileUp,
+  Loader2,
+  TriangleAlert,
+} from "lucide-react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { uploadIncomeRecord } from "@/app/actions/workspace";
 import { buttonClass } from "@/components/ui/button";
 
 type Source = "camera" | "file";
 type Result = Awaited<ReturnType<typeof uploadIncomeRecord>> | null;
+type FilePreview = {
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+};
 
 async function uploadAction(_previous: Result, formData: FormData) {
   return uploadIncomeRecord(formData);
+}
+
+function money(value: number) {
+  return new Intl.NumberFormat("en-PH", {
+    currency: "PHP",
+    style: "currency",
+  }).format(value);
+}
+
+function fileSize(value: number) {
+  if (value < 1024 * 1024) {
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function IncomeRecordCapture({ quarter }: { quarter: number }) {
@@ -20,7 +50,19 @@ export function IncomeRecordCapture({ quarter }: { quarter: number }) {
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const [filename, setFilename] = useState("");
+  const [preview, setPreview] = useState<FilePreview | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    },
+    [],
+  );
 
   function pick(source: Source) {
     const input = inputRef.current;
@@ -51,7 +93,20 @@ export function IncomeRecordCapture({ quarter }: { quarter: number }) {
     }
 
     // Choosing a source is the commitment; a second "upload" tap adds nothing.
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
     setFilename(file.name);
+    setPreview({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: previewUrl,
+    });
+    setPreviewOpen(false);
     formRef.current?.requestSubmit();
   }
 
@@ -103,6 +158,66 @@ export function IncomeRecordCapture({ quarter }: { quarter: number }) {
               </p>
             </div>
           </div>
+          <div className="mt-3 flex items-center justify-between gap-4 rounded-lg border border-success-500/25 bg-white px-3 py-2.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-grey-500">
+              Extracted total
+            </span>
+            <strong className="text-base font-semibold text-grey-800">
+              {typeof result.extractedTotalIncome === "number"
+                ? money(result.extractedTotalIncome)
+                : "Not detected"}
+            </strong>
+          </div>
+          {preview ? (
+            <div className="mt-3 overflow-hidden rounded-lg border border-success-500/25 bg-white">
+              <div className="flex items-center gap-3 px-3 py-2.5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-grey-100 text-grey-600">
+                  <FileText aria-hidden size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-grey-800">
+                    {preview.name}
+                  </p>
+                  <p className="mt-0.5 text-xs text-grey-500">
+                    {preview.type === "application/pdf" ? "PDF" : "Image"} ·{" "}
+                    {fileSize(preview.size)}
+                  </p>
+                </div>
+                <button
+                  aria-expanded={previewOpen}
+                  className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
+                  onClick={() => setPreviewOpen((current) => !current)}
+                  type="button"
+                >
+                  {previewOpen ? (
+                    <EyeOff aria-hidden size={16} />
+                  ) : (
+                    <Eye aria-hidden size={16} />
+                  )}
+                  {previewOpen ? "Hide" : "Preview"}
+                </button>
+              </div>
+              {previewOpen ? (
+                <div className="border-t border-grey-200 bg-grey-100 p-2">
+                  <object
+                    aria-label={`Preview of ${preview.name}`}
+                    className="h-64 w-full rounded-md bg-white"
+                    data={preview.url}
+                    type={preview.type}
+                  >
+                    <a
+                      className="text-sm font-semibold text-primary-700 underline"
+                      href={preview.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Open file preview
+                    </a>
+                  </object>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <button
               className={buttonClass("secondary")}

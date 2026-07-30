@@ -274,7 +274,11 @@ export async function uploadIncomeRecord(formData: FormData) {
   revalidatePath("/filing");
   revalidatePath("/dashboard");
 
-  return { ok: true as const, filename: file.name };
+  return {
+    ok: true as const,
+    filename: file.name,
+    extractedTotalIncome,
+  };
 }
 
 export async function updateIncomeRecordTotal(formData: FormData) {

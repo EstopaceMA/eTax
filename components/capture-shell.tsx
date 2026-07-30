@@ -55,7 +55,7 @@ export function CaptureShell({ quarter }: { quarter: number }) {
       <section
         aria-labelledby="capture-title"
         aria-modal="true"
-        className="relative w-full max-w-md rounded-t-2xl border border-grey-300 bg-white p-4 shadow-[0_-12px_44px_rgba(20,26,33,0.24)] sm:rounded-2xl sm:shadow-[0_24px_70px_rgba(20,26,33,0.24)]"
+        className="relative max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-t-2xl border border-grey-300 bg-white p-4 shadow-[0_-12px_44px_rgba(20,26,33,0.24)] sm:max-h-[90dvh] sm:rounded-2xl sm:shadow-[0_24px_70px_rgba(20,26,33,0.24)]"
         role="dialog"
       >
         <div className="flex items-start justify-between gap-3">

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   const { data: intent } = await supabase
     .from("payment_intents")
-    .select("id, filing_obligation_id, state")
+    .select("id, filing_obligation_id, state, amount")
     .eq("user_id", user.id)
     .eq("transaction_id", transactionId)
     .maybeSingle();
@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
   try {
     const ssoProfile = await getSsoMobile(user.id);
     await sendEgovPayPaymentReceiptSms({
+      amount: Number(intent.amount),
       quarter,
       isFiled: wasAlreadyFiled,
       ssoProfile,
