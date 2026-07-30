@@ -80,7 +80,7 @@ export interface SsoResolution {
  * every time. Off makes a valid, unused exchange code mandatory, so an admin
  * gates every sign-in rather than the email alone being enough.
  */
-function storedFallbackAllowed() {
+export function storedFallbackAllowed() {
   const raw = process.env.EGOV_SSO_ALLOW_STORED_FALLBACK?.trim().toLowerCase();
 
   if (!raw) {
