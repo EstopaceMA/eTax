@@ -120,6 +120,7 @@ function TextEvent({
 }) {
   const user = event.role === "user";
   const contextual = event.kind === "period_context";
+  const test = "commit";
 
   return (
     <div className={user ? "flex justify-end" : "flex items-start gap-3"}>
@@ -955,14 +956,14 @@ export function AgenticChat({
       setDetail((current) =>
         current
           ? {
-              ...current,
-              events: [...payload.events, ...current.events],
-              olderCursor: payload.olderCursor,
-              snapshots: mergeSnapshotPages(
-                current.snapshots,
-                payload.snapshots,
-              ),
-            }
+            ...current,
+            events: [...payload.events, ...current.events],
+            olderCursor: payload.olderCursor,
+            snapshots: mergeSnapshotPages(
+              current.snapshots,
+              payload.snapshots,
+            ),
+          }
           : payload,
       );
     } catch (historyError) {
@@ -1057,7 +1058,7 @@ export function AgenticChat({
       if (!response.ok) {
         throw new Error(
           payload.error ??
-            `The filing chat could not be ${pinned ? "pinned" : "unpinned"}.`,
+          `The filing chat could not be ${pinned ? "pinned" : "unpinned"}.`,
         );
       }
 
