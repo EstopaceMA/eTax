@@ -18,13 +18,14 @@ function stringValue(formData: FormData, key: string) {
 
 export async function signIn(formData: FormData) {
   const email = stringValue(formData, "email").toLowerCase();
+  const exchangeCode = stringValue(formData, "exchange_code");
 
   if (!email) {
     redirect(`/sign-in?error=${encodeURIComponent("Enter your email.")}`);
   }
 
   try {
-    const { profile } = await resolveSsoLogin(email);
+    const { profile } = await resolveSsoLogin(email, exchangeCode || undefined);
 
     const ssoUid = profile.sso_uid as string;
     const fullName = [profile.first_name, profile.middle_name, profile.last_name]
