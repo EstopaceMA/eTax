@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { resolveSsoLogin } from "@/lib/egov-sso/resolve";
+import { resolveSsoLogin, SsoSignInError } from "@/lib/egov-sso/resolve";
 import { linkSsoAccount, syncTaxpayerRdo } from "@/lib/egov-sso/account";
 import { createSsoSession } from "@/lib/egov-sso/session";
 import {
@@ -46,10 +46,17 @@ export async function signIn(formData: FormData) {
 
     await createSsoSession(profile.email as string);
   } catch (error) {
-    // Full detail (which email, which table, whether an account exists) stays
-    // server-side only — the sign-in page must not leak why it failed.
     console.error("eGov SSO sign-in failed:", error);
-    redirect(`/sign-in?error=${encodeURIComponent("Sign in failed.")}`);
+
+    // SsoSignInError carries a message written for whoever is testing, so they
+    // can tell a rejected code from an outage from a missing profile. Anything
+    // else is unexpected and stays generic rather than leaking internals.
+    const message =
+      error instanceof SsoSignInError
+        ? error.userMessage
+        : "Sign in failed. Please try again.";
+
+    redirect(`/sign-in?error=${encodeURIComponent(message)}`);
   }
 
   revalidatePath("/", "layout");
