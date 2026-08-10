@@ -237,7 +237,10 @@ export default async function FilingPage({
     searchParams,
     getWorkspaceData(),
   ]);
-  const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
+  const requestedQuarter = parseFilingQuarter(
+    params?.quarter ?? null,
+    getLatestOpenQuarter(),
+  );
   const requestedMeta =
     filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ?? filingQuarters[1];
   const selectedQuarter = isFilingPeriodOpen(requestedMeta.opensOn)
@@ -299,49 +302,66 @@ export default async function FilingPage({
           a sideways scroll and clipped the last card mid-word. */}
       <div className="py-1">
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-          {obligations.map(({ label, opensOn, dueDate, quarter, obligation }) => {
-            const selected = quarter === selectedQuarter;
-            const open = isFilingPeriodOpen(opensOn);
+          {obligations.map(
+            ({ label, opensOn, dueDate, quarter, displayStatus, obligation }) => {
+              const selected = quarter === selectedQuarter;
+              const open = isFilingPeriodOpen(opensOn);
+              const done = displayStatus === "done";
 
-            return open ? (
-              <Link
-                className={[
-                  "flex min-h-16 items-center justify-between gap-2 rounded-lg border px-3 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
-                  selected
-                    ? "border-primary-500 bg-primary-500 text-white shadow-[0_6px_14px_rgba(7,92,247,0.18)]"
-                    : "border-grey-300 bg-white text-grey-700 hover:border-primary-300",
-                ].join(" ")}
-                href={`/filing?quarter=${quarter}&view=${selectedView}`}
-                key={quarter}
-              >
-                <span>
-                  <span className="block text-sm font-extrabold">{label}</span>
-                  <span
-                    className={`mt-1 block text-xs font-bold ${
-                      selected ? "text-primary-50" : "text-grey-500"
-                    }`}
-                  >
-                    Due {formatDate(obligation?.due_date ?? dueDate)}
+              return open ? (
+                <Link
+                  className={[
+                    "flex min-h-16 items-center justify-between gap-2 rounded-lg border px-3 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
+                    done
+                      ? selected
+                        ? "border-success-500 bg-success-500 text-grey-900 shadow-sm"
+                        : "border-success-500/30 bg-success-500/10 text-grey-900 hover:border-success-500 hover:bg-success-500/15"
+                      : selected
+                        ? "border-primary-500 bg-primary-500 text-white shadow-[0_6px_14px_rgba(7,92,247,0.18)]"
+                        : "border-grey-300 bg-white text-grey-700 hover:border-primary-300",
+                  ].join(" ")}
+                  href={`/filing?quarter=${quarter}&view=${selectedView}`}
+                  key={quarter}
+                >
+                  <span>
+                    <span className="block text-sm font-extrabold">{label}</span>
+                    <span
+                      className={`mt-1 block text-xs font-bold ${
+                        done
+                          ? "text-grey-800"
+                          : selected
+                            ? "text-primary-50"
+                            : "text-grey-500"
+                      }`}
+                    >
+                      {done
+                        ? "Done"
+                        : `Due ${formatDate(obligation?.due_date ?? dueDate)}`}
+                    </span>
                   </span>
-                </span>
-                <CalendarDays aria-hidden size={18} />
-              </Link>
-            ) : (
-              <div
-                aria-disabled="true"
-                className="flex min-h-16 items-center justify-between rounded-lg border border-grey-200 bg-grey-50 px-3 text-grey-400"
-                key={quarter}
-              >
-                <span>
-                  <span className="block text-sm font-extrabold">{label}</span>
-                  <span className="mt-1 block text-xs font-bold">
-                    Opens {formatDate(opensOn)}
+                  {done ? (
+                    <CheckCircle2 aria-hidden size={18} />
+                  ) : (
+                    <CalendarDays aria-hidden size={18} />
+                  )}
+                </Link>
+              ) : (
+                <div
+                  aria-disabled="true"
+                  className="flex min-h-16 items-center justify-between rounded-lg border border-grey-200 bg-grey-50 px-3 text-grey-400"
+                  key={quarter}
+                >
+                  <span>
+                    <span className="block text-sm font-extrabold">{label}</span>
+                    <span className="mt-1 block text-xs font-bold">
+                      Opens {formatDate(opensOn)}
+                    </span>
                   </span>
-                </span>
-                <CalendarDays aria-hidden size={18} />
-              </div>
-            );
-          })}
+                  <CalendarDays aria-hidden size={18} />
+                </div>
+              );
+            },
+          )}
         </div>
       </div>
 

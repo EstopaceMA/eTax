@@ -45,10 +45,7 @@ export default async function SignInPage({
           </label>
           <label className="block">
             <span className="text-sm font-bold text-grey-700">
-              Exchange code
-              {codeRequired ? null : (
-                <span className="font-semibold text-grey-500"> (optional)</span>
-              )}
+              Password
             </span>
             <input
               autoComplete="off"
@@ -56,16 +53,8 @@ export default async function SignInPage({
               name="exchange_code"
               required={codeRequired}
               spellCheck={false}
-              type="text"
+              type="password"
             />
-            <span className="mt-2 block text-xs leading-5 text-grey-600">
-              For testing only. eGovPH SSO requires a single-use exchange code
-              to return your profile, and this environment has no redirect
-              integration to obtain one automatically.{" "}
-              {codeRequired
-                ? "Paste a freshly generated code — a code is required for every sign-in in this environment, and each one works only once."
-                : "Paste a freshly generated code to sign in with live eGovPH data, or leave it blank to use the profile saved from a previous sign-in."}
-            </span>
           </label>
           <SsoSignInButton />
         </form>

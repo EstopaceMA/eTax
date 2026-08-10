@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Camera, FileText } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  CheckCircle2,
+  FileText,
+} from "lucide-react";
 import { ConfirmIncomeRecordForm } from "@/components/agentic-workflow";
 import { CaptureTrigger } from "@/components/capture-trigger";
 import {
@@ -51,7 +57,10 @@ export default async function RecordsPage({
   searchParams?: Promise<{ quarter?: string }>;
 }) {
   const [params, data] = await Promise.all([searchParams, getWorkspaceData()]);
-  const requestedQuarter = parseFilingQuarter(params?.quarter ?? null);
+  const requestedQuarter = parseFilingQuarter(
+    params?.quarter ?? null,
+    getLatestOpenQuarter(),
+  );
   const requestedMeta =
     filingQuarters.find(({ quarter }) => quarter === requestedQuarter) ??
     filingQuarters[1];
@@ -97,22 +106,35 @@ export default async function RecordsPage({
       </header>
 
       <nav aria-label="Filing quarter" className="flex flex-wrap gap-2">
-        {filingQuarters.map(({ quarter, shortLabel, opensOn }) => {
+        {filingQuarters.map(({ quarter, shortLabel, displayStatus, opensOn }) => {
           const open = isFilingPeriodOpen(opensOn);
           const selected = quarter === selectedQuarter;
+          const done = displayStatus === "done";
 
           return open ? (
             <Link
               aria-current={selected ? "page" : undefined}
-              className={
-                selected
-                  ? "min-h-11 rounded-lg bg-primary-500 px-3 py-2 text-sm font-bold text-white"
-                  : "min-h-11 rounded-lg border border-grey-300 bg-white px-3 py-2 text-sm font-bold text-grey-700 transition hover:border-primary-500"
-              }
+              className={[
+                "inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500",
+                done
+                  ? selected
+                    ? "border-success-500 bg-success-500 text-grey-900"
+                    : "border-success-500/30 bg-success-500/10 text-grey-900 hover:border-success-500 hover:bg-success-500/15"
+                  : selected
+                    ? "border-primary-500 bg-primary-500 text-white"
+                    : "border-grey-300 bg-white text-grey-700 hover:border-primary-500",
+              ].join(" ")}
               href={`/records?quarter=${quarter}`}
               key={quarter}
             >
               {shortLabel}
+              {done ? (
+                <>
+                  <span aria-hidden>&middot;</span>
+                  <span>Done</span>
+                  <CheckCircle2 aria-hidden size={15} />
+                </>
+              ) : null}
             </Link>
           ) : (
             <span

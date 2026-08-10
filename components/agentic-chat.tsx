@@ -84,27 +84,46 @@ function PeriodSelection({
           aria-label="Choose a filing period"
           className="mt-3 grid gap-2 sm:grid-cols-2"
         >
-          {filingQuarters.map((period) => (
-            <button
-              className="flex min-h-16 items-center gap-3 rounded-xl border border-grey-300 bg-white px-3 py-2 text-left transition hover:border-primary-300 hover:bg-primary-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:opacity-50"
-              disabled={disabled}
-              key={period.quarter}
-              onClick={() => onSelect(period.quarter)}
-              type="button"
-            >
-              <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-100 text-xs font-semibold text-primary-800">
-                {period.quarter === 4 ? "A" : `Q${period.quarter}`}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-grey-800">
-                  {period.label}
+          {filingQuarters.map((period) => {
+            const done = period.displayStatus === "done";
+
+            return (
+              <button
+                className={[
+                  "flex min-h-16 items-center gap-3 rounded-xl border px-3 py-2 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500 disabled:opacity-50",
+                  done
+                    ? "border-success-500/30 bg-success-500/10 hover:border-success-500 hover:bg-success-500/15"
+                    : "border-grey-300 bg-white hover:border-primary-300 hover:bg-primary-50",
+                ].join(" ")}
+                disabled={disabled}
+                key={period.quarter}
+                onClick={() => onSelect(period.quarter)}
+                type="button"
+              >
+                <span
+                  className={[
+                    "grid size-9 shrink-0 place-items-center rounded-lg text-xs font-semibold",
+                    done
+                      ? "bg-success-500 text-grey-900"
+                      : "bg-primary-100 text-primary-800",
+                  ].join(" ")}
+                >
+                  {period.quarter === 4 ? "A" : `Q${period.quarter}`}
                 </span>
-                <span className="mt-0.5 block text-xs text-grey-500">
-                  BIR Form {period.formCode}
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-grey-800">
+                    {period.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-grey-500">
+                    BIR Form {period.formCode}
+                    {done ? (
+                      <span className="font-bold text-grey-800"> &middot; Done</span>
+                    ) : null}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

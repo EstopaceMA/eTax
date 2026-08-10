@@ -16,6 +16,7 @@ export const filingQuarters: Array<{
   quarter: FilingQuarter;
   label: string;
   shortLabel: string;
+  displayStatus?: "done";
   period: string;
   periodAliases?: string[];
   opensOn: string;
@@ -28,6 +29,7 @@ export const filingQuarters: Array<{
     quarter: 1,
     label: "1st Quarter",
     shortLabel: "Q1",
+    displayStatus: "done",
     period: `Q1 ${filingYear}`,
     opensOn: `${filingYear}-04-01`,
     dueDate: `${filingYear}-05-15`,
@@ -81,14 +83,17 @@ export function getQuarterlyFilingSeeds(): QuarterlyFilingSeed[] {
   }));
 }
 
-export function parseFilingQuarter(value: string | null): FilingQuarter {
+export function parseFilingQuarter(
+  value: string | null,
+  fallback: FilingQuarter = 1,
+): FilingQuarter {
   const quarter = Number(value);
 
   if (quarter === 1 || quarter === 2 || quarter === 3 || quarter === 4) {
     return quarter;
   }
 
-  return 1;
+  return fallback;
 }
 
 export function getQuarterMeta(quarter: FilingQuarter) {
