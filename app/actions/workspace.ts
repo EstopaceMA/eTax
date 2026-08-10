@@ -214,20 +214,24 @@ export async function uploadIncomeRecord(formData: FormData) {
     throw new Error(`Could not upload income record image: ${uploadError.message}`);
   }
 
-  const { error: insertError } = await supabase.from("income_record_uploads").insert({
-    user_id: user.id,
-    quarter,
-    period: quarterMeta.period,
-    original_filename: file.name,
-    storage_path: storagePath,
-    content_type: file.type,
-    size_bytes: file.size,
-    content_hash: contentHash,
-    total_income: extractedTotalIncome,
-    extraction_status: extractedTotalIncome === null ? "needs_review" : "provisional",
-    extraction_confidence: extractedTotalIncome === null ? null : 0.75,
-    extracted_text: extractedText,
-  });
+  const { data: insertedRecord, error: insertError } = await supabase
+    .from("income_record_uploads")
+    .insert({
+      user_id: user.id,
+      quarter,
+      period: quarterMeta.period,
+      original_filename: file.name,
+      storage_path: storagePath,
+      content_type: file.type,
+      size_bytes: file.size,
+      content_hash: contentHash,
+      total_income: extractedTotalIncome,
+      extraction_status: extractedTotalIncome === null ? "needs_review" : "provisional",
+      extraction_confidence: extractedTotalIncome === null ? null : 0.75,
+      extracted_text: extractedText,
+    })
+    .select("id")
+    .single();
 
   if (insertError) {
     const missingMetadataTable =
@@ -276,6 +280,7 @@ export async function uploadIncomeRecord(formData: FormData) {
 
   return {
     ok: true as const,
+    id: insertedRecord?.id ?? storagePath,
     filename: file.name,
     extractedTotalIncome,
   };

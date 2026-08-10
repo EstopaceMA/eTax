@@ -30,6 +30,10 @@ function isChatCommand(formData: FormData) {
   return formData.get("source") === "agentic-chat";
 }
 
+function shouldReturnResult(formData: FormData) {
+  return isChatCommand(formData) || formData.get("source") === "capture-modal";
+}
+
 export async function confirmIncomeRecord(formData: FormData) {
   const user = await requireUser();
   const supabase = await createClient();
@@ -43,14 +47,14 @@ export async function confirmIncomeRecord(formData: FormData) {
   const amount = Number(String(formData.get("total_income") ?? "").replace(/,/g, ""));
 
   if (!isFilingPeriodOpen(quarterMeta.opensOn)) {
-    if (isChatCommand(formData)) {
+    if (shouldReturnResult(formData)) {
       return { ok: false as const, error: "This filing period has not opened yet." };
     }
     redirect(filingUrl(quarter, "records", "period-locked"));
   }
 
   if (!id || !Number.isFinite(amount) || amount < 0) {
-    if (isChatCommand(formData)) {
+    if (shouldReturnResult(formData)) {
       return { ok: false as const, error: "Enter a valid confirmed amount." };
     }
     redirect(filingUrl(quarter, "records", "invalid-record"));
@@ -87,7 +91,7 @@ export async function confirmIncomeRecord(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/filing");
   revalidatePath("/records");
-  if (isChatCommand(formData)) {
+  if (shouldReturnResult(formData)) {
     return { ok: true as const };
   }
   // Confirming from /records stays there so the rest of the queue can be worked

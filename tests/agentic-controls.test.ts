@@ -90,6 +90,20 @@ test("income evidence stores a content hash for annual deduplication", async () 
   assert.match(workspaceActions, /createHash\("sha256"\)/);
 });
 
+test("the capture modal confirms and saves an extracted amount in one step", async () => {
+  const capture = await source("components/income-record-capture.tsx");
+  const shell = await source("components/capture-shell.tsx");
+  const workspaceActions = await source("app/actions/workspace.ts");
+  const agenticActions = await source("app/actions/agentic.ts");
+
+  assert.match(shell, /Confirm it once here to save the record/);
+  assert.match(capture, /value="capture-modal"/);
+  assert.match(capture, /Confirm and save/);
+  assert.doesNotMatch(capture, /Verify total/);
+  assert.match(workspaceActions, /id: insertedRecord\?\.id \?\? storagePath/);
+  assert.match(agenticActions, /formData\.get\("source"\) === "capture-modal"/);
+});
+
 test("agentic filing is a main workspace, not an assistant tab", async () => {
   const agenticPage = await source("app/(protected)/agentic/page.tsx");
   const protectedLayout = await source("app/(protected)/layout.tsx");

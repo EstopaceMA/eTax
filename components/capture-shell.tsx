@@ -12,9 +12,8 @@ export function openCapture() {
 
 /**
  * Capture is interruption-driven: an invoice arrives and the user wants it
- * recorded in a few taps without losing their place. A modal keeps them where
- * they were and stays batch-friendly — photograph several in a row, then verify
- * the extracted totals together on /records.
+ * recorded in a few taps without losing their place. The modal keeps the file,
+ * extracted amount, and the user's one required confirmation in the same flow.
  */
 export function CaptureShell({ quarter }: { quarter: number }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,7 +63,7 @@ export function CaptureShell({ quarter }: { quarter: number }) {
               Add income record
             </h2>
             <p className="mt-0.5 text-sm text-grey-600">
-              eTax reads the total, then you verify it on Records.
+              eTax reads the total. Confirm it once here to save the record.
             </p>
           </div>
           <button
@@ -77,7 +76,7 @@ export function CaptureShell({ quarter }: { quarter: number }) {
           </button>
         </div>
         <div className="mt-4">
-          <IncomeRecordCapture quarter={quarter} />
+          <IncomeRecordCapture onDone={() => setIsOpen(false)} quarter={quarter} />
         </div>
       </section>
     </div>
