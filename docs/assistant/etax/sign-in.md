@@ -9,27 +9,30 @@ keywords:
   - sign in
   - login
   - email
-  - password
+  - eGovPH
+  - exchange code
 related:
   - getting-started
   - dashboard
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Sign in to eTax
 
-Use the sign-in page when you already have an eTax workspace.
+Use the sign-in page to open eTax with the eGovPH profile linked to your email.
 
 ## Steps
 
 1. Go to the eTax sign-in page.
-2. Enter your email address.
-3. Enter your password.
-4. Submit the form.
+2. Enter the email address associated with the eGovPH profile.
+3. For a first sign-in, paste a fresh eGovPH exchange code into the protected code field. Exchange codes are single-use and expire quickly.
+4. Select **Sign in with eGovPH**.
+
+If this workspace has a previously saved eGovPH profile and stored-profile fallback is enabled, eTax can sign in without a new exchange code. In strict mode, a fresh valid code is required every time.
 
 ## If you do not have a workspace yet
 
-Use the **Create workspace** link from the sign-in page. The sign-up flow asks for your taxpayer category, full name, email, and password.
+Register in the eGov app first. A separate **Create workspace** route is also available for the legacy email workspace flow.
 
 ## After signing in
 

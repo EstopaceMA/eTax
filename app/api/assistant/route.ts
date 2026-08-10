@@ -345,9 +345,13 @@ export async function POST(request: Request) {
     }
 
     const mode = isEtaxAppQuestion(question) ? "etax-app" : "ph-tax";
-    const documents = mode === "etax-app" ? await findEtaxHelpDocuments(question, 2) : [];
+    const documentsPromise =
+      mode === "etax-app"
+        ? findEtaxHelpDocuments(question, 4)
+        : Promise.resolve([]);
     await ensureWorkspace();
-    const [plan, workspace] = await Promise.all([
+    const [documents, plan, workspace] = await Promise.all([
+      documentsPromise,
       getAgenticPlan(),
       getWorkspaceData(),
     ]);
@@ -396,8 +400,10 @@ export async function POST(request: Request) {
         title: plan.task.title,
       },
       sources: [
-        ...documents.map(({ filename }) => filename),
-        plan.rule.sourceTitle,
+        ...new Set([
+          ...documents.map(({ section, title }) => `${title} — ${section}`),
+          plan.rule.sourceTitle,
+        ]),
       ],
     });
   } catch (error) {

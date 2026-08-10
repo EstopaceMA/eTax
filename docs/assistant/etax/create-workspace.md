@@ -13,7 +13,7 @@ keywords:
 related:
   - getting-started
   - tax-profile
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Create an eTax workspace

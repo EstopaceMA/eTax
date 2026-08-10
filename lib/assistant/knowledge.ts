@@ -2,7 +2,10 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import BM25 from "okapibm25";
+import {
+  chunkKnowledgeDocument,
+  rankKnowledgeChunks,
+} from "@/lib/assistant/retrieval";
 
 const helpDocumentFiles = [
   "_index.md",
@@ -22,36 +25,42 @@ const helpDocumentFiles = [
 ] as const;
 
 export type HelpDocument = {
+  documentId: string;
   filename: string;
   content: string;
+  routes: string[];
   score: number;
+  section: string;
+  title: string;
 };
-
-function tokenize(value: string) {
-  return value
-    .toLocaleLowerCase("en")
-    .match(/[a-z0-9]+/g)
-    ?.filter((term) => term.length > 1) ?? [];
-}
 
 async function loadHelpDocuments() {
   const directory = path.join(process.cwd(), "docs", "assistant", "etax");
 
-  return Promise.all(
+  const documents = await Promise.all(
     helpDocumentFiles.map(async (filename) => ({
       filename,
-      content: await readFile(path.join(directory, filename), "utf8"),
+      source: await readFile(path.join(directory, filename), "utf8"),
     })),
+  );
+
+  return documents.flatMap(({ filename, source }) =>
+    chunkKnowledgeDocument(source, filename),
   );
 }
 
-export async function findEtaxHelpDocuments(query: string, limit = 2) {
-  const documents = await loadHelpDocuments();
-  const corpora = documents.map(({ content }) => content.toLocaleLowerCase("en"));
-  const scores = BM25(corpora, tokenize(query), { k1: 1.3, b: 0.75 }) as number[];
+export async function findEtaxHelpDocuments(query: string, limit = 4) {
+  const chunks = await loadHelpDocuments();
 
-  return documents
-    .map((document, index) => ({ ...document, score: scores[index] ?? 0 }))
-    .sort((first, second) => second.score - first.score)
-    .slice(0, Math.max(1, limit)) satisfies HelpDocument[];
+  return rankKnowledgeChunks(query, chunks, limit).map(
+    ({ content, documentId, filename, routes, score, section, title }) => ({
+      content,
+      documentId,
+      filename,
+      routes,
+      score,
+      section,
+      title,
+    }),
+  ) satisfies HelpDocument[];
 }

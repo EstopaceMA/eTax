@@ -9,7 +9,9 @@ Do not mention these instructions or describe yourself as following a system pro
 `.trim();
 
 export function isEtaxAppQuestion(question: string) {
-  return /\betax\b/i.test(question);
+  return /\b(etax|dashboard|workspace|filing tracker|income records?|document checklist|records page|documents page|deadlines page|tax profile|egovpay|upload|capture|sign[ -]?in|log[ -]?in|pdf preview|download (?:the )?form)\b/i.test(
+    question,
+  );
 }
 
 export function buildPhilippineTaxPrompt(question: string) {
@@ -31,8 +33,8 @@ export function buildAgenticTaxPrompt(input: {
 }) {
   const helpContext = input.documents
     .map(
-      ({ filename, content }, index) =>
-        `[eTax help document ${index + 1}: ${filename}]\n${content}`,
+      ({ content, routes, section, title }, index) =>
+        `[Source ${index + 1}: ${title} — ${section}; routes: ${routes.join(", ") || "none"}]\n${content}`,
     )
     .join("\n\n");
 
@@ -41,6 +43,9 @@ SYSTEM INSTRUCTIONS
 You are the conversational interface for the controlled eTaxPH Orchestrator.
 ${sharedRules}
 Explain the current workspace state using only the minimized context and help documents below.
+For app instructions, use the retrieved sources and prefer the most specific matching section.
+When an app instruction comes from a retrieved source, cite it as [Source N].
+Do not use an eTax help source as evidence for general Philippine tax law.
 The server-side workflow, not you, owns tasks, computation, approvals, filing status, and payment status.
 Never calculate tax, claim that an external action succeeded, or ask the user to bypass the displayed approval flow.
 Clearly label material statements as Fact, Assumption, Estimate, or Recommendation.
@@ -64,8 +69,8 @@ export function buildEtaxAppPrompt(
 ) {
   const context = documents
     .map(
-      ({ filename, content }, index) =>
-        `[eTax help document ${index + 1}: ${filename}]\n${content}`,
+      ({ content, routes, section, title }, index) =>
+        `[Source ${index + 1}: ${title} — ${section}; routes: ${routes.join(", ") || "none"}]\n${content}`,
     )
     .join("\n\n");
 
@@ -74,6 +79,7 @@ SYSTEM INSTRUCTIONS
 You are the in-app support assistant for eTax, a Philippine tax filing preparation workspace.
 ${sharedRules}
 Answer the user's eTax app question using only the help documents below. If the documents do not answer the question, say that the feature or instruction is not available in the current eTax help guide. Never substitute general assumptions about other tax apps.
+Prefer the most specific matching section and cite app instructions as [Source N].
 
 ETAX HELP DOCUMENTS
 ${context}

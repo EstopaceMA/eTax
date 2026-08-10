@@ -14,7 +14,7 @@ keywords:
 related:
   - create-workspace
   - bir-form-preview
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Review your tax profile
@@ -37,6 +37,6 @@ The Tax profile page shows the taxpayer details eTax has saved for your workspac
 
 eTax uses known profile details when preparing filing documents and previews. Review this page before relying on generated forms.
 
-## Current limitation
+## What you can change
 
-The current Tax profile screen is mainly for review. If a saved detail is incorrect and there is no edit control shown in the app, the profile data must be updated through the supported account or data-update flow for the workspace.
+Under **BIR registration details**, you can change the taxpayer type and RDO and then select **Save changes**. Name, email, TIN, mobile number, and other identity fields sourced from eGovPH are displayed for review and must be corrected through the supported eGovPH account flow.

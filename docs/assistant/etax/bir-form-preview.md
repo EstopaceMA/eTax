@@ -16,19 +16,19 @@ related:
   - filing-tracker
   - upload-income-records
   - tax-profile
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Preview and download a BIR form
 
-Use the BIR Form tab inside Filing tracker to review the generated PDF for the selected filing period.
+Use the **Review** step inside Filing tracker to inspect the computation and access the BIR form preview or download options for the selected filing period.
 
 ## Steps
 
 1. Open **Filing tracker**.
 2. Select the filing period.
-3. Open the **BIR Form** tab.
-4. Review the PDF preview.
+3. Open **Review**.
+4. Review the computation and PDF preview.
 5. Use the download button if you need a local copy.
 
 ## What eTax fills

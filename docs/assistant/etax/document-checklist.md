@@ -14,7 +14,7 @@ keywords:
 related:
   - dashboard
   - filing-tracker
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Track filing documents
@@ -35,4 +35,4 @@ The checklist can include taxpayer identification records, income summaries, rec
 
 ## Difference from invoice uploads
 
-The Documents page tracks whether required documents are ready. To upload invoices or income records for extraction, use **Filing tracker** instead.
+The Documents page tracks whether preparation items are ready. To add, confirm, edit, or remove invoices and income records, use **Income records** instead.

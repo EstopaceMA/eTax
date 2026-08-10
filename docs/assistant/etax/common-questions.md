@@ -8,6 +8,7 @@ routes:
   - /profile
   - /documents
   - /deadlines
+  - /records
   - /filing
 keywords:
   - FAQ
@@ -18,7 +19,7 @@ related:
   - getting-started
   - upload-income-records
   - bir-form-preview
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Common eTax questions
@@ -29,7 +30,7 @@ Start on the Dashboard. It shows readiness, the next deadline, your active filin
 
 ## Where do I upload invoices?
 
-Go to **Filing tracker**, select the filing period, then use the **Documents** tab. The separate **Documents** page is a checklist, not the invoice upload area.
+Open **Income records**, choose the filing quarter, and select **Add income record**. On mobile, the center camera action opens the same capture flow from anywhere in the protected app. The separate **Documents** page is a preparation checklist, not the invoice upload area.
 
 ## Why did eTax ask about a duplicate file?
 
@@ -41,7 +42,7 @@ Document extraction depends on the clarity and layout of the uploaded file. Revi
 
 ## Where do I preview the generated form?
 
-Go to **Filing tracker**, select a period, then open the **BIR Form** tab.
+Go to **Filing tracker**, select a period, then open **Review**. The BIR form preview and download options appear beside the computation review.
 
 ## Why are some form fields blank?
 
@@ -49,8 +50,8 @@ eTax only fills fields it can support from saved workspace data. Review the PDF 
 
 ## Where do I update my tax profile?
 
-The current Tax profile page mainly displays saved details. If a field is wrong and no edit control is shown, it must be updated through the supported account or data-update flow for the workspace.
+Open **Profile** from the account area. You can change the taxpayer type and RDO under **BIR registration details**. Identity fields sourced from eGovPH must be corrected through the supported eGovPH account flow.
 
 ## Does eTax automatically file my taxes?
 
-eTax prepares and tracks filing information. Review generated forms and use the correct official filing channel when submitting.
+No. eTax prepares a guided official-channel hand-off, but it does not submit the return to the BIR. After filing through the official channel, save the acknowledgement reference in the **Hand-off** step.

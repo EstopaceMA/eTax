@@ -10,17 +10,19 @@ keywords:
   - quarterly filing
   - BIR Form 1701Q
   - form preview
-  - upload records
+  - computation review
+  - filing hand-off
+  - payment approval
 related:
   - upload-income-records
   - bir-form-preview
   - deadlines
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Use the filing tracker
 
-The Filing tracker is where you work on a filing period.
+The Filing tracker is the controlled quarterly filing workspace. Income records are managed separately; the tracker shows them as read-only evidence for review.
 
 ## Choose a filing period
 
@@ -35,11 +37,13 @@ The Filing tracker is where you work on a filing period.
 - Q3 2026, BIR Form 1701Q, due November 15, 2026.
 - Annual 2026, BIR Form 1701A, due April 15, 2027.
 
-## Filing tracker tabs
+## Filing tracker steps
 
-- Documents: upload income record files and save extracted totals.
-- BIR Form: preview and download the generated PDF for the selected period.
+- Records: review the confirmed income records used as computation evidence and follow **Manage records** to change them.
+- Review: inspect the deterministic computation, assumptions, rule source, and BIR form preview or download. Confirm the computation before continuing.
+- Hand-off: approve the exact return snapshot for a guided official-channel hand-off. This does not submit the return or authorize payment. After official filing, save the acknowledgement reference.
+- Payment: separately approve the displayed taxpayer, period, tax type, and amount before opening the eGovPay test gateway.
 
 ## Status shown
 
-The tracker shows the selected period's filing status and payment status. Use those badges to understand what eTax currently has on record for that period.
+The tracker shows the active task and preserves evidence for each material approval. The filing journey is complete only when both the filing acknowledgement and payment confirmation are recorded.

@@ -15,7 +15,7 @@ related:
   - getting-started
   - filing-tracker
   - upload-income-records
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # eTax help index
@@ -30,7 +30,9 @@ eTax helps a taxpayer prepare for Philippine tax filing by keeping profile detai
 - Tax profile: review the saved taxpayer details eTax uses in filing preparation.
 - Documents: track checklist items needed before filing.
 - Deadlines: review upcoming compliance dates and filing channels.
-- Filing tracker: upload income records, extract totals, and preview or download a BIR form PDF.
+- Income records: add invoice images or PDFs, review extracted totals, confirm records, edit amounts, and remove records.
+- Filing tracker: review confirmed records, verify the computation, download the BIR form, approve a filing hand-off, preserve its acknowledgement, and separately approve payment.
+- Agentic filing: continue a guided filing conversation for a selected filing period.
 - eGovPay: pay the Tax amount payable shown in Payment review through the hosted checkout.
 - SMS reminders: receive deadline reminders when filing or payment actions are still incomplete.
 
@@ -38,4 +40,4 @@ eTax helps a taxpayer prepare for Philippine tax filing by keeping profile detai
 
 When answering eTax app questions, explain the current visible app flow. Do not tell the user to use a page or button that is not documented here.
 
-For general Philippine tax law questions, use separate tax reference documents sourced from official or verified tax materials. These eTax help documents only explain how the app works.
+For general Philippine tax law questions, do not treat these app guides as legal authority. Use the controlled tax rule identified by the workspace and recommend checking current official BIR guidance for material decisions.

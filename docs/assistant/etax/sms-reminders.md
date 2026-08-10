@@ -17,7 +17,7 @@ related:
   - deadlines
   - filing-tracker
   - dashboard
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Understand SMS reminders
@@ -28,14 +28,14 @@ eTax can send SMS reminders when a filing deadline is approaching and a filing p
 
 Reminders are meant for cases such as:
 
-- The filing PDF has not been generated yet.
-- The filing PDF was generated, but the return is not filed or paid.
-- The filing PDF was generated and payment is marked paid, but filing is not marked filed.
-- The return is filed, but payment is not marked paid.
+- Income records still need to be added or confirmed.
+- The computation has not been reviewed.
+- The filing hand-off has no acknowledgement reference yet.
+- Filing is acknowledged, but payment is not confirmed.
 
 ## When no reminder is needed
 
-If a filing period is generated, filed, and paid, eTax treats it as complete and does not need to send a deadline action reminder.
+If the filing acknowledgement and payment confirmation are both recorded, eTax treats the journey as complete and does not need to send a deadline action reminder.
 
 ## Reminder timing
 

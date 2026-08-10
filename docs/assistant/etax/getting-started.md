@@ -16,7 +16,7 @@ related:
   - create-workspace
   - sign-in
   - dashboard
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Getting started with eTax
@@ -25,17 +25,17 @@ eTax is a filing preparation workspace. It helps you keep track of your tax prof
 
 ## First-time flow
 
-1. Open eTax and choose **Create workspace**.
-2. Select the taxpayer category that best matches your situation.
-3. Enter your name, email, and password.
-4. After your workspace is created, eTax opens your dashboard.
-5. Review your dashboard, profile, document checklist, deadlines, and filing tracker.
+1. Register in the eGov app if you do not already have an eGovPH account.
+2. Open eTax and go to **Sign in**.
+3. Enter the email linked to the eGovPH profile and, when required, a fresh exchange code.
+4. Select **Sign in with eGovPH**.
+5. Review your dashboard, profile, income records, document checklist, deadlines, and filing tracker.
 
 ## Returning user flow
 
 1. Open eTax.
 2. Go to **Sign in**.
-3. Enter the email and password for your eTax workspace.
+3. Enter the eGovPH-linked email. If eTax requests a code, paste a fresh eGovPH exchange code.
 4. Continue from the dashboard.
 
 ## What eTax helps you monitor
@@ -44,7 +44,8 @@ eTax is a filing preparation workspace. It helps you keep track of your tax prof
 - Which deadline is coming next.
 - Which documents are missing or complete.
 - Which income records have been uploaded.
-- Whether uploaded invoices have an extracted total income amount.
+- Whether uploaded invoices have a confirmed total income amount.
+- The computation, filing hand-off, acknowledgement, and payment state for a filing period.
 - Whether a filing PDF is ready to preview or download.
 
 ## What eTax does not replace

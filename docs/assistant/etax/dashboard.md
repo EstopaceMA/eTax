@@ -15,7 +15,7 @@ related:
   - filing-tracker
   - deadlines
   - document-checklist
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Use the eTax dashboard
@@ -24,9 +24,10 @@ The dashboard gives you a quick view of your filing preparation status.
 
 ## What you can see
 
-- Filing readiness percentage.
-- Next filing deadline.
-- Number of income records uploaded.
+- Filing journey progress.
+- The active filing period and its due date.
+- The current recommended next action.
+- Number and total of income records used by the active period.
 - Active filing period.
 - Filing status and payment status for the active period.
 - Total income recorded from saved income records.
@@ -35,12 +36,13 @@ The dashboard gives you a quick view of your filing preparation status.
 ## How to use it
 
 1. Open **Dashboard** from the app navigation.
-2. Check the readiness percentage to see whether required preparation items are complete.
-3. Check the next deadline and active filing period.
+2. Check the active period, progress, and due date.
+3. Follow the recommended next action.
 4. Review the income record total.
-5. Open **Filing tracker** when you need to upload income records or preview a filing PDF.
-6. Open **Documents** when checklist items are still missing.
-7. Open **Deadlines** when you need to review upcoming compliance dates.
+5. Open **Income records** when you need to add or confirm records.
+6. Open **Filing tracker** when you need to review the computation, download a filing PDF, or continue the hand-off and payment workflow.
+7. Open **Documents** when checklist items are still missing.
+8. Open **Deadlines** when you need to review other compliance dates.
 
 ## Status meaning
 

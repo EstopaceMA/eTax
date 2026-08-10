@@ -4,6 +4,7 @@ title: Upload income records
 category: etax-how-to
 audience: taxpayer
 routes:
+  - /records
   - /filing
 keywords:
   - upload invoice
@@ -15,22 +16,22 @@ keywords:
 related:
   - filing-tracker
   - bir-form-preview
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Upload income records
 
-Use the Documents tab inside Filing tracker to upload invoices or income record files for a selected filing period.
+Use **Income records** to add invoices or other income record files for an open filing period. You can also open the capture flow from the center camera action on mobile.
 
 ## Steps
 
-1. Open **Filing tracker**.
-2. Select the filing period you are working on.
-3. Open the **Documents** tab.
-4. Choose an image or PDF file to upload.
-5. Wait while eTax uploads the file and reads the document.
-6. Review the extracted total income amount.
-7. Save the record.
+1. Open **Income records**.
+2. Select an open filing quarter.
+3. Select **Add income record**.
+4. Take a photo on a supported mobile device or choose an image or PDF.
+5. Wait while eTax uploads and reads the document.
+6. Review or correct the extracted total.
+7. Save and confirm the record so it can count toward the filing computation.
 
 ## Supported upload types
 
@@ -38,15 +39,15 @@ The upload control accepts images and PDFs.
 
 ## What eTax extracts
 
-When possible, eTax reads the uploaded document and prefills the total income amount. You should still review the amount before saving it.
+When possible, eTax reads the uploaded document and prefills the total income amount. The record remains unconfirmed until you review it. Only confirmed records count toward the computation.
 
 ## Duplicate file warning
 
-If you upload a file with the same filename for the same filing period, eTax asks whether you really want to add it again. Choose cancel if you uploaded the file by mistake.
+If the same filename already exists for the filing period, eTax blocks the duplicate because counting it twice could overstate income.
 
 ## Delete an uploaded record
 
-Use the delete control beside a saved upload when the record should no longer count toward the filing period.
+Use the delete control beside a confirmed record on **Income records** when it should no longer count. A record already locked into a handed-off return cannot be changed; eTax opens an exception instead.
 
 ## If extraction is slow
 

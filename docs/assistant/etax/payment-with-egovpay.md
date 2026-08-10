@@ -14,7 +14,7 @@ keywords:
 related:
   - filing-tracker
   - bir-form-preview
-last_reviewed: 2026-07-22
+last_reviewed: 2026-08-11
 ---
 
 # Pay through eGovPay
@@ -25,20 +25,17 @@ The Payment review in Filing tracker can open a hosted eGovPay test checkout.
 
 1. Open **Filing tracker**.
 2. Select an open filing period.
-3. Open **Payment review**.
-4. Review the filing period, form, recorded income, and tax amount status.
-5. Select **Proceed**.
-6. Complete the test payment on the hosted eGovPay page.
-7. Select **Return to merchant** to see the payment confirmation in eTax.
+3. Complete the computation review and filing hand-off, including the filing acknowledgement.
+4. Open **Payment**.
+5. Review the taxpayer, filing period, tax type, exact amount, and payment status.
+6. Select **Approve and open eGovPay**. Payment requires an approval separate from filing approval.
+7. Complete the test payment on the hosted eGovPay page.
+8. Return to eTax to see the confirmation.
 
 ## Payment amount
 
-eTax sends the **Tax amount payable** shown in the filing review to eGovPay. The
-amount is temporarily set to PHP 10.00 while automatic tax calculation is being
-connected.
+eTax sends the exact **Amount payable** from the controlled computation to eGovPay. The approval record preserves the taxpayer, period, tax type, currency, filing acknowledgement, and amount.
 
 ## Payment status
 
-The merchant return displays a test payment confirmation. It does not yet mark the
-filing as paid because the current integration does not verify payment callbacks or
-update payment status.
+The merchant return verifies the matching payment intent and marks the obligation paid. A confirmed payment completes the filing journey automatically; no receipt upload is required.
