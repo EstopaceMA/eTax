@@ -25,6 +25,7 @@ import {
 import { uploadIncomeRecord } from "@/app/actions/workspace";
 import { EgovPayCheckoutForm } from "@/components/egovpay-checkout-form";
 import { buttonClass } from "@/components/ui/button";
+import { computationPresentation } from "@/lib/agentic/computation-presentation";
 import type {
   AgenticSessionEvent,
   AgenticSnapshotResponse,
@@ -149,6 +150,7 @@ export function AgenticWorkflowMessage({
   const plan = snapshot.plan;
   const quarter = event.quarter ?? plan.period.quarter;
   const taskBlock = item.block;
+  const computationCopy = computationPresentation(plan.rule);
 
   function chatFormData(form?: HTMLFormElement) {
     const formData = form ? new FormData(form) : new FormData();
@@ -345,7 +347,7 @@ export function AgenticWorkflowMessage({
                     </div>
                     <div className="rounded-lg bg-primary-500 p-3 text-white">
                       <dt className="text-[10px] font-semibold uppercase text-primary-100">
-                        Demo amount
+                        {computationCopy.amountLabel}
                       </dt>
                       <dd className="mt-1 text-lg font-semibold">
                         {money(plan.computation.output_snapshot.amountPayable)}
@@ -353,8 +355,7 @@ export function AgenticWorkflowMessage({
                     </div>
                   </dl>
                   <div className="border-l-4 border-warning-500 bg-warning-500/10 px-3 py-2 text-xs leading-5 text-grey-700">
-                    Illustrative 6% rule only. No deductions, credits, prior payments,
-                    or official assessment.
+                    {computationCopy.disclosure}
                   </div>
                   <button
                     className={buttonClass("primary")}

@@ -8,6 +8,7 @@ import type {
   AgenticTimelineItem,
   AgenticSnapshotResponse,
 } from "@/lib/agentic/types";
+import { computationPresentation } from "@/lib/agentic/computation-presentation";
 
 const stepBlocks: Record<AgenticPlan["task"]["task_type"], AgenticBlock> = {
   collect_records: { type: "record_upload" },
@@ -81,6 +82,7 @@ function readableStatus(value: string | null) {
 }
 
 function stageSummary(stage: AgenticStage, plan: AgenticPlan) {
+  const computationCopy = computationPresentation(plan.rule);
   const totalIncome = plan.records.reduce(
     (sum, record) => sum + Number(record.total_income ?? 0),
     0,
@@ -102,10 +104,10 @@ function stageSummary(stage: AgenticStage, plan: AgenticPlan) {
         value: money(plan.computation?.input_snapshot.totalIncome ?? totalIncome),
       },
       {
-        label: "Illustrative amount",
+        label: computationCopy.factAmountLabel,
         value: money(plan.computation?.output_snapshot.amountPayable ?? 0),
       },
-      { label: "Rule", value: "Illustrative 6% gross-income rule" },
+      { label: "Rule", value: computationCopy.ruleLabel },
     ];
   }
 
@@ -443,8 +445,9 @@ export function buildAgenticDataAnswer(
         : []),
     ];
   } else if (topic === "computation") {
+    const computationCopy = computationPresentation(plan.rule);
     answer = plan.computation
-      ? "The current amount is the controlled pilot computation stored for this filing. It is illustrative and is not an official BIR assessment."
+      ? computationCopy.explanation
       : "A computation is not available yet. Confirm every income record before the Review stage can prepare one.";
     facts = plan.computation
       ? [
@@ -453,10 +456,10 @@ export function buildAgenticDataAnswer(
             value: money(plan.computation.input_snapshot.totalIncome),
           },
           {
-            label: "Illustrative amount",
+            label: computationCopy.factAmountLabel,
             value: money(plan.computation.output_snapshot.amountPayable),
           },
-          { label: "Rule", value: "Illustrative 6% gross-income rule" },
+          { label: "Rule", value: computationCopy.ruleLabel },
           { label: "Rule version", value: plan.rule.version },
         ]
       : [
