@@ -8,8 +8,14 @@ function requiredEnv(name: string) {
   return value;
 }
 
-function getBaseUrl() {
-  return requiredEnv("EGOV_SSO_BASE_URL").replace(/\/+$/, "");
+function requiredHttpsUrl(name: string) {
+  const url = new URL(requiredEnv(name));
+
+  if (url.protocol !== "https:") {
+    throw new Error(`${name} must be an HTTPS URL.`);
+  }
+
+  return url.toString();
 }
 
 interface EgovSsoTokenResponse {
@@ -80,7 +86,7 @@ export class EgovSsoHttpError extends Error {
 export async function exchangeCodeForToken(
   exchangeCode: string,
 ): Promise<string> {
-  const response = await fetch(`${getBaseUrl()}/api/token`, {
+  const response = await fetch(requiredHttpsUrl("EGOV_SSO_TOKEN_URL"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -106,7 +112,7 @@ export async function fetchSsoProfile(
   accessToken: string,
 ): Promise<EgovSsoProfile> {
   const response = await fetch(
-    `${getBaseUrl()}/api/partner/sso_authentication`,
+    requiredHttpsUrl("EGOV_SSO_PROFILE_URL"),
     {
       method: "POST",
       headers: {
