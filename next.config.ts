@@ -1,12 +1,16 @@
 import type { NextConfig } from "next";
 
+const ssoImageHosts = (process.env.EGOV_SSO_IMAGE_HOSTS ?? "")
+  .split(",")
+  .map((hostname) => hostname.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "staging-files.oueg.info" },
-      { protocol: "https", hostname: "egov-cdn.e.gov.ph" },
-      { protocol: "https", hostname: "egov-cdn-stg.oueg.info" },
-    ],
+    remotePatterns: ssoImageHosts.map((hostname) => ({
+      protocol: "https",
+      hostname,
+    })),
   },
   outputFileTracingIncludes: {
     "/api/assistant": ["./docs/assistant/etax/**/*.md"],

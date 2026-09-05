@@ -1,5 +1,3 @@
-const defaultBaseUrl = "https://egov-ai-core-ws.oueg.info";
-
 function envValue(names: string[]) {
   for (const name of names) {
     const value = process.env[name]?.trim();
@@ -12,11 +10,20 @@ function envValue(names: string[]) {
   return null;
 }
 
-export function getEgovAiBaseUrl() {
-  return (
-    envValue(["EGOV_AI_BASE_URL", "EGOV_BASE_URL", "EGOV_BASE", "BASE"]) ??
-    defaultBaseUrl
-  ).replace(/\/+$/, "");
+export function requiredEgovAiEndpoint(name: string) {
+  const value = envValue([name]);
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  const url = new URL(value);
+
+  if (url.protocol !== "https:") {
+    throw new Error(`${name} must be an HTTPS URL.`);
+  }
+
+  return url.toString();
 }
 
 export async function getEgovAiAccessToken() {
@@ -44,7 +51,7 @@ export async function getEgovAiAccessToken() {
   }
 
   const response = await fetch(
-    `${getEgovAiBaseUrl()}/api/v1/egov/integration/token`,
+    requiredEgovAiEndpoint("EGOV_AI_TOKEN_URL"),
     {
       method: "POST",
       headers: {

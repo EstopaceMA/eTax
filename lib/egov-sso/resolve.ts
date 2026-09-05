@@ -53,7 +53,7 @@ function describeSsoFailure(error: unknown): string {
   }
 
   if (error instanceof Error && /fetch failed|ENOTFOUND|ECONNREFUSED|timeout/i.test(error.message)) {
-    return "Could not reach eGovPH SSO. Check network access to hackathon-sso.e.gov.ph.";
+    return "Could not reach the configured eGovPH SSO service. Check the Developer Portal endpoint and network access.";
   }
 
   if (error instanceof Error && /Missing required environment variable/i.test(error.message)) {
@@ -135,6 +135,34 @@ export async function resolveSsoLogin(
   let ssoFailureMessage: string | undefined;
 
   if (exchangeCode) {
+    // Exchange codes are single-use. Verify that this deployment can read
+    // existing encrypted profiles before spending a fresh code and attempting
+    // to update the matching SSO row.
+    const { data: encryptionProbe, error: encryptionProbeError } = await supabase
+      .from("egov_sso_profiles")
+      .select("email")
+      .not("email", "is", null)
+      .limit(1)
+      .maybeSingle();
+
+    if (encryptionProbeError) {
+      throw new SsoSignInError(
+        "eTax could not verify its secure profile storage. Please ask the administrator to check the database configuration before trying another eGovPH code.",
+        `PII storage preflight failed: ${encryptionProbeError.message}`,
+      );
+    }
+
+    if (encryptionProbe) {
+      try {
+        decryptEgovSsoRow(encryptionProbe);
+      } catch (error) {
+        throw new SsoSignInError(
+          "eTax cannot read its saved secure profiles. Please ask the administrator to restore the correct encryption key before trying another eGovPH code.",
+          `PII encryption preflight failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
     try {
       const accessToken = await exchangeCodeForToken(exchangeCode);
       const profile = await fetchSsoProfile(accessToken);

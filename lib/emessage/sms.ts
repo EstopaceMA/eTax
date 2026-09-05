@@ -1,5 +1,3 @@
-const defaultBaseUrl = "https://ws-message.e.gov.ph";
-
 function envValue(names: string[]) {
   for (const name of names) {
     const value = process.env[name]?.trim();
@@ -12,10 +10,20 @@ function envValue(names: string[]) {
   return null;
 }
 
-function getBaseUrl() {
-  return (
-    envValue(["EMESSAGE_BASE_URL", "EGOV_MESSAGE_BASE_URL"]) ?? defaultBaseUrl
-  ).replace(/\/+$/, "");
+function getSmsPushUrl() {
+  const value = envValue(["EMESSAGE_SMS_PUSH_URL"]);
+
+  if (!value) {
+    throw new Error("Missing EMESSAGE_SMS_PUSH_URL.");
+  }
+
+  const url = new URL(value);
+
+  if (url.protocol !== "https:") {
+    throw new Error("EMESSAGE_SMS_PUSH_URL must be an HTTPS URL.");
+  }
+
+  return url.toString();
 }
 
 export async function sendSms({
@@ -31,7 +39,7 @@ export async function sendSms({
     throw new Error("Missing EMESSAGE_ACCESS_TOKEN.");
   }
 
-  const response = await fetch(`${getBaseUrl()}/messaging/v1/sms/push`, {
+  const response = await fetch(getSmsPushUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

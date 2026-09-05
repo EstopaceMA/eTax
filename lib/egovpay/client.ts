@@ -2,8 +2,6 @@ import "server-only";
 
 import { createHmac } from "node:crypto";
 
-const defaultBaseUrl = "https://egovpay-pgi-ws-dev.oueg.info";
-
 type CreatePaymentInput = {
   amount: number;
   callbackUrl: string;
@@ -32,6 +30,16 @@ function requiredEnv(name: string) {
   return value;
 }
 
+function requiredHttpsUrl(name: string) {
+  const url = new URL(requiredEnv(name));
+
+  if (url.protocol !== "https:") {
+    throw new Error(`${name} must be an HTTPS URL.`);
+  }
+
+  return url.toString();
+}
+
 function createDigest(amount: number, transactionId: string, token: string) {
   const digestKey = token.startsWith("test_") ? token.slice("test_".length) : token;
 
@@ -48,11 +56,7 @@ export async function createEgovPayTransaction(input: CreatePaymentInput) {
     throw new Error("eGovPay live tokens are disabled in this integration.");
   }
 
-  const baseUrl = (process.env.EGOVPAY_BASE_URL?.trim() || defaultBaseUrl).replace(
-    /\/+$/,
-    "",
-  );
-  const response = await fetch(`${baseUrl}/api/v1/transaction`, {
+  const response = await fetch(requiredHttpsUrl("EGOVPAY_TRANSACTION_URL"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=utf-8",

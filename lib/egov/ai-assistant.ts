@@ -1,6 +1,6 @@
 import {
   getEgovAiAccessToken,
-  getEgovAiBaseUrl,
+  requiredEgovAiEndpoint,
 } from "@/lib/egov/client";
 
 type AssistantPayload = {
@@ -16,7 +16,7 @@ export async function generateEgovAssistantResponse(prompt: string) {
   }
 
   const response = await fetch(
-    `${getEgovAiBaseUrl()}/api/v1/egov/integration/ai_assistant/generate`,
+    requiredEgovAiEndpoint("EGOV_AI_ASSISTANT_URL"),
     {
       method: "POST",
       headers: {

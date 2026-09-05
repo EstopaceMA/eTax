@@ -1,6 +1,6 @@
 import {
   getEgovAiAccessToken,
-  getEgovAiBaseUrl,
+  requiredEgovAiEndpoint,
 } from "@/lib/egov/client";
 
 type ExtractorResult = {
@@ -71,7 +71,7 @@ export async function extractInvoiceTotalFromDocument(
   );
 
   const response = await fetch(
-    `${getEgovAiBaseUrl()}/api/v1/egov/integration/document_extractor/generate`,
+    requiredEgovAiEndpoint("EGOV_AI_DOCUMENT_EXTRACTOR_URL"),
     {
       method: "POST",
       headers: {
